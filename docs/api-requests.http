@@ -1,0 +1,122 @@
+@baseUrl = http://localhost:8080
+@token = paste-login-token-here
+@knowledgeBaseId = 1
+@documentId = 1
+@sessionId = 1
+
+### Health
+GET {{baseUrl}}/actuator/health
+
+### Register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "Password123",
+  "nickname": "Alice"
+}
+
+### Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "Password123"
+}
+
+### Create knowledge base
+POST {{baseUrl}}/api/knowledge-bases
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Java Notes",
+  "description": "Spring Boot and RAG learning notes"
+}
+
+### List knowledge bases
+GET {{baseUrl}}/api/knowledge-bases
+Authorization: Bearer {{token}}
+
+### Get knowledge base
+GET {{baseUrl}}/api/knowledge-bases/{{knowledgeBaseId}}
+Authorization: Bearer {{token}}
+
+### Update knowledge base
+PUT {{baseUrl}}/api/knowledge-bases/{{knowledgeBaseId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Java Notes Updated",
+  "description": "Updated notes"
+}
+
+### Upload document
+POST {{baseUrl}}/api/knowledge-bases/{{knowledgeBaseId}}/documents
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample.txt"
+Content-Type: text/plain
+
+Spring Boot supports dependency injection and auto configuration.
+--boundary--
+
+### List documents
+GET {{baseUrl}}/api/knowledge-bases/{{knowledgeBaseId}}/documents
+Authorization: Bearer {{token}}
+
+### Get document status
+GET {{baseUrl}}/api/documents/{{documentId}}/status
+Authorization: Bearer {{token}}
+
+### Vector search
+POST {{baseUrl}}/api/search/vector
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "knowledgeBaseId": {{knowledgeBaseId}},
+  "question": "What does Spring Boot support?",
+  "topK": 5
+}
+
+### Create chat session
+POST {{baseUrl}}/api/chat/sessions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "knowledgeBaseId": {{knowledgeBaseId}},
+  "title": "Java Q&A"
+}
+
+### List chat sessions
+GET {{baseUrl}}/api/chat/sessions
+Authorization: Bearer {{token}}
+
+### Send chat message
+POST {{baseUrl}}/api/chat/sessions/{{sessionId}}/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "question": "What does Spring Boot support?",
+  "topK": 5
+}
+
+### List chat messages
+GET {{baseUrl}}/api/chat/sessions/{{sessionId}}/messages
+Authorization: Bearer {{token}}
+
+### Delete document
+DELETE {{baseUrl}}/api/documents/{{documentId}}
+Authorization: Bearer {{token}}
+
+### Delete knowledge base
+DELETE {{baseUrl}}/api/knowledge-bases/{{knowledgeBaseId}}
+Authorization: Bearer {{token}}
