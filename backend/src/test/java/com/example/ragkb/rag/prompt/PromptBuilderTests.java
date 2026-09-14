@@ -22,8 +22,9 @@ class PromptBuilderTests {
                         "Spring Boot 自动配置会根据 classpath 创建 Bean。",
                         0.87321)));
 
-        assertThat(prompt).contains("你是一个严谨的知识库问答助手");
-        assertThat(prompt).contains("只能根据【资料片段】回答问题");
+        assertThat(prompt).contains("你是一个知识库优先的问答助手");
+        assertThat(prompt).contains("优先根据资料片段回答");
+        assertThat(prompt).contains("可以使用你的通用知识回答");
         assertThat(prompt).contains("Spring Boot 自动配置是什么？");
         assertThat(prompt).contains("[资料 1]");
         assertThat(prompt).contains("chunkId: 200");
@@ -36,7 +37,8 @@ class PromptBuilderTests {
     void shouldBuildPromptWithFallbackRuleWhenChunksAreEmpty() {
         String prompt = promptBuilder.build("未知问题", List.of());
 
-        assertThat(prompt).contains("根据当前知识库资料，我无法回答这个问题。");
+        assertThat(prompt).contains("以下回答未使用知识库资料");
+        assertThat(prompt).contains("无法实时查询");
         assertThat(prompt).contains("【资料片段】\n无");
     }
 

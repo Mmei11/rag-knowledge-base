@@ -12,10 +12,11 @@ JWT 鉴权
 PDF/TXT/Markdown 文档解析
 文本切分与重叠窗口
 异步文档处理
-Embedding 抽象与 mock 实现
+Embedding 抽象与 mock/OpenAI/Qwen 实现
 pgvector 向量存储
 相似度检索
 RAG Prompt 构建
+OpenAI/Qwen API 问答生成
 聊天会话、消息、引用记录
 Redis 缓存
 Redis 聊天限流
@@ -134,6 +135,42 @@ cd D:\MAIN\rag-knowledge-base\frontend
 npm.cmd run dev
 ```
 
+## OpenAI 接入
+
+项目默认仍使用 mock 模型，方便本地无成本跑通完整链路：
+
+```text
+EMBEDDING_PROVIDER=mock
+CHAT_MODEL_PROVIDER=mock
+```
+
+如果要调用真实 OpenAI API，在本地 `.env` 中改成：
+
+```text
+EMBEDDING_PROVIDER=openai
+CHAT_MODEL_PROVIDER=openai
+OPENAI_API_KEY=你的 OpenAI API Key
+OPENAI_CHAT_MODEL=gpt-5-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+EMBEDDING_DIMENSION=1024
+```
+
+说明：真实 API Key 只放本地 `.env`，不要提交到 GitHub。详细说明见 `docs/openai-integration.md`。
+
+也可以使用阿里云百炼 / DashScope 的 Qwen：
+
+```text
+EMBEDDING_PROVIDER=qwen
+CHAT_MODEL_PROVIDER=qwen
+QWEN_API_KEY=你的百炼 API Key
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_CHAT_MODEL=qwen-plus
+QWEN_EMBEDDING_MODEL=text-embedding-v4
+EMBEDDING_DIMENSION=1024
+```
+
+详细说明见 `docs/qwen-integration.md`。
+
 ## 测试
 
 后端测试：
@@ -146,7 +183,7 @@ D:\MAIN\tools\apache-maven-3.9.16\bin\mvn.cmd test
 当前结果：
 
 ```text
-Tests run: 104
+Tests run: 115
 Failures: 0
 Errors: 0
 Skipped: 0

@@ -8,20 +8,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class PromptBuilder {
 
-    private static final String FALLBACK_ANSWER = "根据当前知识库资料，我无法回答这个问题。";
-
     public String build(String question, List<RetrievedChunkResponse> chunks) {
         String normalizedQuestion = normalizeQuestion(question);
         List<RetrievedChunkResponse> safeChunks = chunks == null ? List.of() : List.copyOf(chunks);
 
         return """
-                你是一个严谨的知识库问答助手。
+                你是一个知识库优先的问答助手。
 
                 【回答规则】
-                1. 只能根据【资料片段】回答问题。
-                2. 如果资料不足，必须回答：%s
-                3. 不要编造资料片段中没有的信息。
-                4. 回答要简洁、准确，并尽量说明依据来自哪些资料片段。
+                1. 如果【资料片段】足以回答问题，优先根据资料片段回答，并尽量说明依据来自哪些资料片段。
+                2. 如果问题与资料片段无关，或者资料片段不足以回答，可以使用你的通用知识回答。
+                3. 使用通用知识回答时，需要明确说明“以下回答未使用知识库资料”。
+                4. 不要把通用知识伪装成资料片段内容，也不要编造资料片段中没有的引用。
+                5. 对天气、股价、新闻等实时信息，如果你无法获取实时数据，需要说明无法实时查询，并给出合理的查询建议。
+                6. 回答要简洁、准确，优先使用中文。
 
                 【用户问题】
                 %s
@@ -30,7 +30,7 @@ public class PromptBuilder {
                 %s
 
                 【最终回答】
-                """.formatted(FALLBACK_ANSWER, normalizedQuestion, formatChunks(safeChunks)).trim();
+                """.formatted(normalizedQuestion, formatChunks(safeChunks)).trim();
     }
 
     private String normalizeQuestion(String question) {

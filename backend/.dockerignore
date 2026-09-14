@@ -1,6 +1,7 @@
 target
 storage
-.mvn
+.mvn/*
+!.mvn/settings.xml
 mvnw
 mvnw.cmd
 *.log

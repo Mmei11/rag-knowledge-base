@@ -85,10 +85,27 @@ CHAT_MODEL_PROVIDER=mock
 
 也就是说，本地开发时不需要真实大模型 API Key，就可以跑通完整工程链路。
 
-后续可以扩展：
+项目也已经支持切换到真实模型服务，例如 OpenAI：
 
 ```text
-OpenAI Embedding
-OpenAI Chat Model
-其他兼容 OpenAI API 的模型服务
+EMBEDDING_PROVIDER=openai
+CHAT_MODEL_PROVIDER=openai
+OPENAI_API_KEY=你的 OpenAI API Key
+OPENAI_CHAT_MODEL=gpt-5-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
+
+切换后，文档入库时会调用 OpenAI Embeddings API 生成真实向量；用户提问时会调用 OpenAI Responses API 生成真实回答。
+
+也可以切换到 Qwen：
+
+```text
+EMBEDDING_PROVIDER=qwen
+CHAT_MODEL_PROVIDER=qwen
+QWEN_API_KEY=你的百炼 API Key
+QWEN_CHAT_MODEL=qwen-plus
+QWEN_EMBEDDING_MODEL=text-embedding-v4
+EMBEDDING_DIMENSION=1024
+```
+
+切换后，文档入库和用户问题向量化都会调用 Qwen embedding；回答生成会调用 Qwen chat completions。

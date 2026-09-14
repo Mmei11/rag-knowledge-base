@@ -76,7 +76,7 @@ CREATE TABLE document_chunks (
     content TEXT NOT NULL,
     token_count INTEGER NOT NULL DEFAULT 0,
     page_number INTEGER,
-    embedding VECTOR(384),
+    embedding VECTOR(1024),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT pk_document_chunks PRIMARY KEY (id),

@@ -20,7 +20,7 @@ public class MockChatModelService implements ChatModelService {
             throw new IllegalArgumentException("prompt must not be blank");
         }
         if (!prompt.contains("[资料 1]")) {
-            return "根据当前知识库资料，我无法回答这个问题。";
+            return "以下回答未使用知识库资料：这是通用模拟回答。";
         }
         return "这是 " + properties.getModel() + " 的模拟回答：已根据检索到的资料片段生成答案。";
     }

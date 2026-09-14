@@ -79,7 +79,7 @@ document_id
 knowledge_base_id
 chunk_index
 content
-embedding VECTOR(384)
+embedding VECTOR(1024)
 ```
 
 ```text

@@ -10,7 +10,7 @@ D:\MAIN\tools\apache-maven-3.9.16\bin\mvn.cmd test
 ## Current Result
 
 ```text
-Tests run: 104
+Tests run: 115
 Failures: 0
 Errors: 0
 Skipped: 0
@@ -28,11 +28,11 @@ Knowledge base CRUD and ownership isolation
 Document upload, validation, query, delete, and status flow
 Text parsing and chunking
 Async document processing
-Embedding abstraction and mock embedding
+Embedding abstraction with mock, OpenAI, and Qwen implementations
 pgvector formatting and vector storage
 Vector search service and controller
 Prompt building
-Mock chat model
+Mock, OpenAI, and Qwen chat model implementations
 RAG chat session, message, reference flow
 Redis cache invalidation
 Redis cache serialization

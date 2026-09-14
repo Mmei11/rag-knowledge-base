@@ -26,7 +26,7 @@ class MockChatModelServiceTests {
 
         String answer = service.generate("【资料片段】\n无");
 
-        assertThat(answer).isEqualTo("根据当前知识库资料，我无法回答这个问题。");
+        assertThat(answer).isEqualTo("以下回答未使用知识库资料：这是通用模拟回答。");
     }
 
     @Test
