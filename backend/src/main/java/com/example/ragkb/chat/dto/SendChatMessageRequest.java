@@ -1,5 +1,6 @@
 package com.example.ragkb.chat.dto;
 
+import com.example.ragkb.rag.prompt.PromptMode;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,9 +13,19 @@ public record SendChatMessageRequest(
 
         @Min(value = 1, message = "topK must be greater than or equal to 1")
         @Max(value = 20, message = "topK must not exceed 20")
-        Integer topK) {
+        Integer topK,
+
+        PromptMode promptMode) {
+
+    public SendChatMessageRequest(String question, Integer topK) {
+        this(question, topK, null);
+    }
 
     public int normalizedTopK() {
         return topK == null ? 5 : topK;
+    }
+
+    public PromptMode normalizedPromptMode() {
+        return promptMode == null ? PromptMode.KB_FIRST : promptMode;
     }
 }

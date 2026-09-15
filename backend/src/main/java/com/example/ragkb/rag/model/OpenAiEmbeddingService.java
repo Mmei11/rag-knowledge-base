@@ -14,8 +14,8 @@ import org.springframework.web.client.RestClient;
 public class OpenAiEmbeddingService implements EmbeddingService {
 
     private final OpenAiProperties openAiProperties;
-    private final EmbeddingProperties embeddingProperties;
-    private final RestClient restClient;
+    private final EmbeddingProperties embeddingProperties;   //拿embidding的维度
+    private final RestClient restClient;       //HTTP请求工具
 
     public OpenAiEmbeddingService(
             OpenAiProperties openAiProperties,
@@ -25,7 +25,7 @@ public class OpenAiEmbeddingService implements EmbeddingService {
         this.embeddingProperties = embeddingProperties;
         this.restClient = restClientBuilder
                 .baseUrl(openAiProperties.getBaseUrl())
-                .build();
+                .build();    //创建了一个http客户端
     }
 
     @Override
@@ -52,7 +52,7 @@ public class OpenAiEmbeddingService implements EmbeddingService {
                         embeddingProperties.getDimension(),
                         "float"))
                 .retrieve()
-                .body(OpenAiEmbeddingResponse.class);
+                .body(OpenAiEmbeddingResponse.class);   //反序列化
 
         if (response == null || response.data() == null || response.data().size() != texts.size()) {
             throw new IllegalStateException("OpenAI embedding response size does not match request size");

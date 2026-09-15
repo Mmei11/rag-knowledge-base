@@ -79,6 +79,8 @@ export type DocumentStatusResponse = {
 
 export type ChatRole = 'USER' | 'ASSISTANT'
 
+export type PromptMode = 'STRICT_KB' | 'KB_FIRST' | 'GENERAL' | 'LEARNING'
+
 export type CreateChatSessionRequest = {
   knowledgeBaseId: number
   title?: string
@@ -95,6 +97,7 @@ export type ChatSessionResponse = {
 export type SendChatMessageRequest = {
   question: string
   topK?: number
+  promptMode?: PromptMode
 }
 
 export type ChatReferenceResponse = {

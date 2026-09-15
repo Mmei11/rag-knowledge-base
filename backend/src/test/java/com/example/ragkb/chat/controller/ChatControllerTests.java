@@ -96,7 +96,8 @@ class ChatControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "question": "What is DI?"
+                                  "question": "What is DI?",
+                                  "promptMode": "KB_FIRST"
                                 }
                                 """))
                 .andExpect(status().isOk())

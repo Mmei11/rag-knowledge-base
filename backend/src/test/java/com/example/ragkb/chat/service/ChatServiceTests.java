@@ -26,6 +26,7 @@ import com.example.ragkb.rag.dto.VectorSearchRequest;
 import com.example.ragkb.rag.dto.VectorSearchResponse;
 import com.example.ragkb.rag.model.ChatModelService;
 import com.example.ragkb.rag.prompt.PromptBuilder;
+import com.example.ragkb.rag.prompt.PromptMode;
 import com.example.ragkb.rag.service.RagRetrievalService;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.user.entity.UserRole;
@@ -135,7 +136,7 @@ class ChatServiceTests {
         });
         when(ragRetrievalService.search(any(CurrentUser.class), any(VectorSearchRequest.class)))
                 .thenReturn(new VectorSearchResponse(10L, "What is DI?", 5, List.of(chunk)));
-        when(promptBuilder.build("What is DI?", List.of(chunk))).thenReturn("prompt");
+        when(promptBuilder.build("What is DI?", List.of(chunk), PromptMode.KB_FIRST)).thenReturn("prompt");
         when(chatModelService.generate("prompt")).thenReturn("DI is a way to provide dependencies.");
 
         ChatAnswerResponse response = service.sendMessage(

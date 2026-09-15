@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ApiError, chatApi, knowledgeBaseApi } from '../api/http'
 import { StatusMessage } from '../components/StatusMessage'
@@ -7,10 +7,17 @@ import type {
   ChatReferenceResponse,
   ChatSessionResponse,
   KnowledgeBaseResponse,
+  PromptMode,
 } from '../types/api'
 import { formatDateTime } from '../utils/date'
 
 const DEFAULT_TOP_K = 5
+const PROMPT_MODE_OPTIONS: Array<{ label: string; value: PromptMode }> = [
+  { label: '知识库优先', value: 'KB_FIRST' },
+  { label: '严格知识库', value: 'STRICT_KB' },
+  { label: '通用问答', value: 'GENERAL' },
+  { label: '学习讲解', value: 'LEARNING' },
+]
 
 function validateQuestion(question: string) {
   const text = question.trim()
@@ -35,6 +42,7 @@ function referenceLabel(reference: ChatReferenceResponse) {
 }
 
 export function ChatPage() {
+  const messageListRef = useRef<HTMLDivElement | null>(null)
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseResponse[]>([])
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [messages, setMessages] = useState<ChatMessageResponse[]>([])
@@ -42,6 +50,7 @@ export function ChatPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
   const [sessionTitle, setSessionTitle] = useState('')
   const [question, setQuestion] = useState('')
+  const [promptMode, setPromptMode] = useState<PromptMode>('KB_FIRST')
   const [activeReference, setActiveReference] = useState<ChatReferenceResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [answering, setAnswering] = useState(false)
@@ -124,6 +133,18 @@ export function ChatPage() {
     }
   }, [selectedSession])
 
+  useEffect(() => {
+    const messageList = messageListRef.current
+    if (!messageList) {
+      return
+    }
+
+    messageList.scrollTo({
+      top: messageList.scrollHeight,
+      behavior: 'smooth',
+    })
+  }, [messages, answering, selectedSessionId])
+
   async function handleCreateSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -177,6 +198,7 @@ export function ChatPage() {
       const answer = await chatApi.sendMessage(selectedSessionId, {
         question: question.trim(),
         topK: DEFAULT_TOP_K,
+        promptMode,
       })
       setMessages((current) => [
         ...current,
@@ -269,7 +291,7 @@ export function ChatPage() {
 
         <StatusMessage error={error} message={message} />
 
-        <div className="message-list">
+        <div className="message-list" ref={messageListRef}>
           {messages.map((chatMessage) => (
             <article
               className={`message-item ${chatMessage.role.toLowerCase()}`}
@@ -313,19 +335,36 @@ export function ChatPage() {
         </div>
 
         <form className="question-form" onSubmit={handleSendQuestion}>
-          <textarea
-            maxLength={1000}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder="输入一个关于当前知识库的问题"
-            value={question}
-          />
-          <button
-            className="primary-button"
-            disabled={answering || !selectedSessionId}
-            type="submit"
-          >
-            发送
-          </button>
+          <div className="question-toolbar">
+            <label>
+              回答模式
+              <select
+                onChange={(event) => setPromptMode(event.target.value as PromptMode)}
+                value={promptMode}
+              >
+                {PROMPT_MODE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="question-input-row">
+            <textarea
+              maxLength={1000}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder="输入一个关于当前知识库的问题"
+              value={question}
+            />
+            <button
+              className="primary-button"
+              disabled={answering || !selectedSessionId}
+              type="submit"
+            >
+              发送
+            </button>
+          </div>
         </form>
       </section>
 

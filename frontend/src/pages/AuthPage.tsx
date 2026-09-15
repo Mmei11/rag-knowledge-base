@@ -50,6 +50,17 @@ export function AuthPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  function handleModeChange(nextMode: AuthMode) {
+    if (nextMode === authMode) {
+      return
+    }
+
+    setAuthMode(nextMode)
+    setAuthForm(emptyAuthForm)
+    setMessage('')
+    setError('')
+  }
+
   async function runAction(action: () => Promise<void>) {
     setLoading(true)
     setError('')
@@ -107,11 +118,16 @@ export function AuthPage() {
   return (
     <main className="app auth-shell">
       <section className="auth-panel">
-        <div className="brand-block">
-          <span className="brand-mark">R</span>
-          <div>
+        <div className="auth-card-header">
+          <div className="brand-block">
+            <span className="brand-mark">R</span>
+            <div>
+              <p className="auth-kicker">RAG Knowledge Base</p>
+            </div>
+          </div>
+          <div className="auth-copy">
             <h1>智能知识库</h1>
-            <p>注册登录与知识库管理</p>
+            <p>{authMode === 'login' ? '欢迎回来，继续管理你的知识空间。' : '创建账号，开始构建你的个人知识库。'}</p>
           </div>
         </div>
 
@@ -119,14 +135,16 @@ export function AuthPage() {
           <button
             type="button"
             className={authMode === 'login' ? 'active' : ''}
-            onClick={() => setAuthMode('login')}
+            onClick={() => handleModeChange('login')}
+            aria-selected={authMode === 'login'}
           >
             登录
           </button>
           <button
             type="button"
             className={authMode === 'register' ? 'active' : ''}
-            onClick={() => setAuthMode('register')}
+            onClick={() => handleModeChange('register')}
+            aria-selected={authMode === 'register'}
           >
             注册
           </button>
@@ -147,7 +165,7 @@ export function AuthPage() {
               minLength={3}
               maxLength={50}
               pattern="[A-Za-z0-9_]+"
-              placeholder="alice"
+              placeholder="输入用户名"
               required
             />
           </label>
@@ -166,7 +184,7 @@ export function AuthPage() {
               autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
               minLength={8}
               maxLength={72}
-              placeholder="Password123"
+              placeholder="输入密码"
               required
             />
           </label>
@@ -183,7 +201,7 @@ export function AuthPage() {
                   }))
                 }
                 maxLength={100}
-                placeholder="Alice"
+                placeholder="输入昵称"
               />
             </label>
           )}

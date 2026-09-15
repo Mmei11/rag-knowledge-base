@@ -15,7 +15,7 @@ import org.springframework.web.client.RestClient;
 public class OpenAiChatModelService implements ChatModelService {
 
     private final OpenAiProperties openAiProperties;
-    private final ChatModelProperties chatModelProperties;
+    private final ChatModelProperties chatModelProperties;   //聊天模型的通用参数
     private final RestClient restClient;
 
     public OpenAiChatModelService(

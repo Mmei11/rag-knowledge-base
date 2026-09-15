@@ -34,12 +34,39 @@ class PromptBuilderTests {
     }
 
     @Test
-    void shouldBuildPromptWithFallbackRuleWhenChunksAreEmpty() {
-        String prompt = promptBuilder.build("未知问题", List.of());
+    void shouldBuildStrictKnowledgeBasePrompt() {
+        String prompt = promptBuilder.build("你是什么模型？", List.of(), PromptMode.STRICT_KB);
+
+        assertThat(prompt).contains("你是一个严谨的知识库问答助手");
+        assertThat(prompt).contains("只能根据【资料片段】回答问题");
+        assertThat(prompt).contains("根据当前知识库资料，我无法回答这个问题。");
+    }
+
+    @Test
+    void shouldBuildKnowledgeBaseFirstPromptWhenChunksAreEmpty() {
+        String prompt = promptBuilder.build("未知问题", List.of(), PromptMode.KB_FIRST);
 
         assertThat(prompt).contains("以下回答未使用知识库资料");
         assertThat(prompt).contains("无法实时查询");
         assertThat(prompt).contains("【资料片段】\n无");
+    }
+
+    @Test
+    void shouldBuildGeneralPrompt() {
+        String prompt = promptBuilder.build("今天上海天气怎么样？", List.of(), PromptMode.GENERAL);
+
+        assertThat(prompt).contains("你是一个通用 AI 问答助手");
+        assertThat(prompt).contains("可以直接使用你的通用知识回答问题");
+        assertThat(prompt).contains("无法实时查询");
+    }
+
+    @Test
+    void shouldBuildLearningPrompt() {
+        String prompt = promptBuilder.build("解释一下 MOT", List.of(), PromptMode.LEARNING);
+
+        assertThat(prompt).contains("你是一个擅长教学讲解的知识库学习助手");
+        assertThat(prompt).contains("先用通俗语言解释核心概念");
+        assertThat(prompt).contains("以下内容为通用知识补充");
     }
 
     @Test

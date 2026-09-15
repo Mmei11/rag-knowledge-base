@@ -112,7 +112,7 @@ public class ChatService {
                 new VectorSearchRequest(session.getKnowledgeBaseId(), question, request.normalizedTopK()));
         List<RetrievedChunkResponse> retrievedChunks = searchResponse.items();
 
-        String prompt = promptBuilder.build(question, retrievedChunks);
+        String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode());
         long modelStartedAt = System.nanoTime();
         String answer = chatModelService.generate(prompt);
         log.info("chat model completed, userId={}, sessionId={}, promptLength={}, referenceCount={}, durationMs={}",
