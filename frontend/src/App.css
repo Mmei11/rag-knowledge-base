@@ -1013,3 +1013,317 @@ select:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* Authentication page: deliberately sparse, editorial layout. */
+.auth-shell {
+  display: block;
+  min-height: 100vh;
+  overflow: auto;
+  padding: 28px clamp(24px, 5vw, 80px) 48px;
+  background: #f8f8f6;
+}
+
+.auth-shell::before,
+.auth-shell::after {
+  display: none;
+}
+
+.auth-topbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1440px, 100%);
+  margin: 0 auto;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1d1d1f;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.auth-brand .brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #0877f9;
+  box-shadow: none;
+  font-size: 20px;
+}
+
+.language-menu {
+  position: relative;
+}
+
+.language-trigger,
+.language-options button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+}
+
+.language-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  color: #6e6e73;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.language-trigger:hover {
+  color: #1d1d1f;
+  background: rgba(29, 29, 31, 0.04);
+}
+
+.language-chevron {
+  font-size: 20px;
+  line-height: 0.6;
+  transform: translateY(-2px);
+}
+
+.language-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: 152px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  padding: 5px;
+}
+
+.language-options button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  border-radius: 8px;
+  color: #3a3a3c;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.language-options button:hover,
+.language-options button.selected {
+  background: #f2f2f4;
+}
+
+.language-options .selected span {
+  color: #0071e3;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  align-items: center;
+  gap: clamp(56px, 9vw, 160px);
+  width: min(1240px, 100%);
+  min-height: calc(100vh - 112px);
+  margin: 0 auto;
+}
+
+.auth-hero {
+  padding: 32px 0 52px;
+}
+
+.auth-hero h1 {
+  max-width: 700px;
+  margin: 0;
+  color: #1d1d1f;
+  font-family: "Noto Serif SC", "Source Han Serif SC", STSong, SimSun, serif;
+  font-size: clamp(48px, 5.2vw, 78px);
+  font-weight: 500;
+  letter-spacing: -0.075em;
+  line-height: 1.1;
+}
+
+.auth-hero p {
+  margin: 22px 0 0;
+  color: #86868b;
+  font-size: clamp(18px, 1.7vw, 24px);
+  font-weight: 450;
+  letter-spacing: -0.035em;
+}
+
+.auth-surface {
+  width: min(100%, 420px);
+  justify-self: end;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.09);
+  padding: 48px;
+}
+
+.auth-surface-header h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 32px;
+  letter-spacing: -0.055em;
+  line-height: 1.15;
+}
+
+.auth-surface-header p {
+  margin: 10px 0 0;
+  color: #86868b;
+  font-size: 15px;
+  letter-spacing: -0.015em;
+}
+
+.auth-surface .auth-form {
+  gap: 22px;
+  margin-top: 38px;
+}
+
+.auth-surface label {
+  gap: 9px;
+  color: #3a3a3c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-surface input {
+  min-height: 52px;
+  border-color: #d2d2d7;
+  border-radius: 12px;
+  color: #1d1d1f;
+  background: #fff;
+  font-size: 16px;
+  padding: 12px 14px;
+}
+
+.auth-surface input::placeholder {
+  color: #a1a1a6;
+}
+
+.auth-surface input:focus {
+  border-color: #0071e3;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+}
+
+.auth-surface .primary-button {
+  min-height: 52px;
+  margin-top: 6px;
+  border-radius: 12px;
+  background: #0071e3;
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.auth-surface .primary-button:hover {
+  background: #0077ed;
+}
+
+.auth-surface .status {
+  margin: 20px 0 0;
+  border-radius: 10px;
+}
+
+.auth-mode-switch {
+  margin: 30px 0 0;
+  color: #86868b;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-mode-switch button {
+  border: 0;
+  color: #0071e3;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+}
+
+.auth-mode-switch button:hover {
+  color: #005bb5;
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .auth-shell {
+    padding: 24px 28px 40px;
+  }
+
+  .auth-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    min-height: auto;
+    padding: 88px 0 32px;
+  }
+
+  .auth-hero {
+    padding: 0;
+  }
+
+  .auth-hero h1 {
+    max-width: 560px;
+  }
+
+  .auth-surface {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-shell {
+    padding: 20px 20px 36px;
+  }
+
+  .auth-brand {
+    font-size: 13px;
+  }
+
+  .auth-brand .brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 18px;
+  }
+
+  .language-trigger {
+    font-size: 13px;
+    padding-right: 0;
+  }
+
+  .auth-layout {
+    padding-top: 68px;
+  }
+
+  .auth-hero h1 {
+    font-size: clamp(40px, 12vw, 54px);
+  }
+
+  .auth-hero p {
+    margin-top: 16px;
+    font-size: 18px;
+  }
+
+  .auth-surface {
+    width: 100%;
+    border-radius: 18px;
+    padding: 32px 24px;
+  }
+
+  .auth-surface-header h2 {
+    font-size: 28px;
+  }
+}
