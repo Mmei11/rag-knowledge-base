@@ -88,6 +88,15 @@ Docker Desktop
 ```powershell
 cd D:\MAIN\rag-knowledge-base
 docker compose up -d --build
+
+
+
+代理地址：
+```
+$env:HTTP_PROXY='http://127.0.0.1:12450'
+$env:HTTPS_PROXY='http://127.0.0.1:12450'
+$env:http_proxy='http://127.0.0.1:12450'
+$env:https_proxy='http://127.0.0.1:12450'
 ```
 
 访问地址：
