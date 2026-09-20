@@ -85,8 +85,7 @@ Docker Desktop
 
 在项目根目录执行：
 
-```text
-powershell
+```powershell
 cd D:\MAIN\rag-knowledge-base
 docker compose up -d --build
 ```
@@ -199,7 +198,7 @@ Failures: 0
 Errors: 0
 Skipped: 0
 ```
-
+  
 前端构建：
 
 ```powershell
