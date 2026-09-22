@@ -11,11 +11,13 @@ import org.springframework.stereotype.Repository;
 public class RagRetrievalRepository {
 
     private static final String SEARCH_SQL = """
-            SELECT id, document_id, chunk_index, content, 1 - (embedding <=> CAST(? AS vector)) AS similarity
-            FROM document_chunks
-            WHERE knowledge_base_id = ?
-              AND embedding IS NOT NULL
-            ORDER BY embedding <=> CAST(? AS vector)
+            SELECT c.id, c.document_id, c.chunk_index, c.content, d.file_name, c.page_number, c.pdf_page_number,
+                   1 - (c.embedding <=> CAST(? AS vector)) AS similarity
+            FROM document_chunks c
+            JOIN documents d ON d.id = c.document_id
+            WHERE c.knowledge_base_id = ?
+              AND c.embedding IS NOT NULL
+            ORDER BY c.embedding <=> CAST(? AS vector)
             LIMIT ?
             """;
 
@@ -38,7 +40,10 @@ public class RagRetrievalRepository {
                         rs.getLong("document_id"),
                         rs.getInt("chunk_index"),
                         rs.getString("content"),
-                        rs.getDouble("similarity")),
+                        rs.getDouble("similarity"),
+                        rs.getString("file_name"),
+                        rs.getObject("page_number", Integer.class),
+                        rs.getObject("pdf_page_number", Integer.class)),
                 vector,
                 knowledgeBaseId,
                 vector,

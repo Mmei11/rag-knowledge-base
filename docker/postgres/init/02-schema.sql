@@ -76,6 +76,7 @@ CREATE TABLE document_chunks (
     content TEXT NOT NULL,
     token_count INTEGER NOT NULL DEFAULT 0,
     page_number INTEGER,
+    pdf_page_number INTEGER,
     embedding VECTOR(1024),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -91,6 +92,8 @@ CREATE TABLE document_chunks (
     CONSTRAINT ck_document_chunks_token_count CHECK (token_count >= 0),
     CONSTRAINT ck_document_chunks_page_number
         CHECK (page_number IS NULL OR page_number > 0),
+    CONSTRAINT ck_document_chunks_pdf_page_number
+        CHECK (pdf_page_number IS NULL OR pdf_page_number > 0),
     CONSTRAINT ck_document_chunks_content
         CHECK (LENGTH(BTRIM(content)) > 0)
 );

@@ -17,6 +17,7 @@ import com.example.ragkb.chat.entity.MessageReference;
 import com.example.ragkb.chat.repository.ChatMessageRepository;
 import com.example.ragkb.chat.repository.ChatSessionRepository;
 import com.example.ragkb.chat.repository.MessageReferenceRepository;
+import com.example.ragkb.chat.repository.MessageReferenceDetail;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.ratelimit.RateLimitService;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
@@ -193,6 +194,33 @@ class ChatServiceTests {
                 });
     }
 
+    @Test
+    void shouldRestoreReferencesWhenListingMessages() {
+        ChatService service = service();
+        ChatSession session = session();
+        ChatMessage userMessage = new ChatMessage(100L, 1L, ChatRole.USER, "What is DI?");
+        ChatMessage assistantMessage = new ChatMessage(100L, 1L, ChatRole.ASSISTANT, "DI provides dependencies.");
+        fillMessage(userMessage, 500L);
+        fillMessage(assistantMessage, 501L);
+        when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(session));
+        when(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(100L))
+                .thenReturn(List.of(userMessage, assistantMessage));
+        when(messageReferenceRepository.findDetailsByMessageIdIn(List.of(500L, 501L)))
+                .thenReturn(List.of(referenceDetail()));
+
+        assertThat(service.listMessages(currentUser, 100L))
+                .satisfiesExactly(
+                        message -> assertThat(message.references()).isEmpty(),
+                        message -> assertThat(message.references()).singleElement().satisfies(reference -> {
+                            assertThat(reference.documentId()).isEqualTo(300L);
+                            assertThat(reference.chunkId()).isEqualTo(200L);
+                            assertThat(reference.fileName()).isEqualTo("spring-boot.pdf");
+                            assertThat(reference.pageNumber()).isEqualTo(3);
+                            assertThat(reference.pdfPageNumber()).isEqualTo(5);
+                            assertThat(reference.similarity()).isEqualTo(0.91);
+                        }));
+    }
+
     private ChatService service() {
         return new ChatService(
                 knowledgeBaseRepository,
@@ -226,5 +254,54 @@ class ChatServiceTests {
     private void fillMessage(ChatMessage message, Long id) {
         ReflectionTestUtils.setField(message, "id", id);
         ReflectionTestUtils.setField(message, "createdAt", OffsetDateTime.now());
+    }
+
+    private MessageReferenceDetail referenceDetail() {
+        return new MessageReferenceDetail() {
+            @Override
+            public Long getMessageId() {
+                return 501L;
+            }
+
+            @Override
+            public Long getDocumentId() {
+                return 300L;
+            }
+
+            @Override
+            public Long getChunkId() {
+                return 200L;
+            }
+
+            @Override
+            public int getChunkIndex() {
+                return 4;
+            }
+
+            @Override
+            public String getContent() {
+                return "Spring Boot supports dependency injection.";
+            }
+
+            @Override
+            public double getSimilarity() {
+                return 0.91;
+            }
+
+            @Override
+            public String getFileName() {
+                return "spring-boot.pdf";
+            }
+
+            @Override
+            public Integer getPageNumber() {
+                return 3;
+            }
+
+            @Override
+            public Integer getPdfPageNumber() {
+                return 5;
+            }
+        };
     }
 }

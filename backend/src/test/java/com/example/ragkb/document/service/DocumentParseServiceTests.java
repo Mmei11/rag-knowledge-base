@@ -29,6 +29,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,6 +116,39 @@ class DocumentParseServiceTests {
     }
 
     @Test
+    void shouldStorePdfPageNumberOnEachChunk() throws Exception {
+        Path file = tempDir.resolve("pages.pdf");
+        try (PDDocument pdf = new PDDocument()) {
+            addPdfPage(pdf, "First page notes");
+            addPdfPage(pdf, "Second page notes");
+            pdf.save(file.toFile());
+        }
+        Document document = document(100L, 1L, "pdf", file);
+        DocumentParseService service = service();
+        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
+        when(documentChunkRepository.saveAllAndFlush(anyList())).thenAnswer(invocation -> withIds(invocation.getArgument(0)));
+        when(embeddingService.embedBatch(List.of("First page notes", "Second page notes")))
+                .thenReturn(List.of(
+                        new EmbeddingVector(List.of(0.1, 0.2)),
+                        new EmbeddingVector(List.of(0.3, 0.4))));
+
+        DocumentParseResponse response = service.parse(currentUser, 100L);
+
+        assertThat(response.status()).isEqualTo(DocumentStatus.COMPLETED);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<DocumentChunk>> chunksCaptor = ArgumentCaptor.forClass((Class) List.class);
+        verify(documentChunkRepository).saveAllAndFlush(chunksCaptor.capture());
+        assertThat(chunksCaptor.getValue())
+                .extracting(
+                        DocumentChunk::getChunkIndex,
+                        DocumentChunk::getPageNumber,
+                        DocumentChunk::getPdfPageNumber)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(0, 1, 1),
+                        org.assertj.core.groups.Tuple.tuple(1, 2, 2));
+    }
+
+    @Test
     void shouldMarkFailedWhenContentIsBlank() throws Exception {
         Path file = tempDir.resolve("blank.txt");
         Files.writeString(file, "   ");
@@ -168,5 +206,17 @@ class DocumentParseServiceTests {
                 filePath.toString());
         ReflectionTestUtils.setField(document, "id", id);
         return document;
+    }
+
+    private void addPdfPage(PDDocument document, String text) throws Exception {
+        PDPage page = new PDPage();
+        document.addPage(page);
+        try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+            contentStream.beginText();
+            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.newLineAtOffset(50, 700);
+            contentStream.showText(text);
+            contentStream.endText();
+        }
     }
 }

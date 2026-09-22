@@ -35,6 +35,9 @@ public class DocumentChunk {
     @Column(name = "page_number")
     private Integer pageNumber;
 
+    @Column(name = "pdf_page_number")
+    private Integer pdfPageNumber;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -48,12 +51,24 @@ public class DocumentChunk {
             String content,
             int tokenCount,
             Integer pageNumber) {
+        this(documentId, knowledgeBaseId, chunkIndex, content, tokenCount, pageNumber, null);
+    }
+
+    public DocumentChunk(
+            Long documentId,
+            Long knowledgeBaseId,
+            int chunkIndex,
+            String content,
+            int tokenCount,
+            Integer pageNumber,
+            Integer pdfPageNumber) {
         this.documentId = documentId;
         this.knowledgeBaseId = knowledgeBaseId;
         this.chunkIndex = chunkIndex;
         this.content = content;
         this.tokenCount = tokenCount;
         this.pageNumber = pageNumber;
+        this.pdfPageNumber = pdfPageNumber;
     }
 
     @PrePersist
@@ -87,6 +102,10 @@ public class DocumentChunk {
 
     public Integer getPageNumber() {
         return pageNumber;
+    }
+
+    public Integer getPdfPageNumber() {
+        return pdfPageNumber;
     }
 
     public OffsetDateTime getCreatedAt() {

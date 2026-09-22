@@ -106,6 +106,9 @@ export type ChatReferenceResponse = {
   chunkIndex: number
   content: string
   similarity: number
+  fileName: string | null
+  pageNumber: number | null
+  pdfPageNumber: number | null
 }
 
 export type ChatMessageResponse = {

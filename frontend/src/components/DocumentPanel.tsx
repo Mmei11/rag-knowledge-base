@@ -232,7 +232,7 @@ export function DocumentPanel({
             </div>
 
             <div className="document-actions">
-              {document.status === 'FAILED' && (
+              {!isProcessing(document.status) && (
                 <button
                   className="ghost-button"
                   disabled={loading}

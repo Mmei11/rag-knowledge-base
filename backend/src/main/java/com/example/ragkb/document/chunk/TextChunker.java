@@ -29,6 +29,21 @@ public class TextChunker {
     }
 
     public List<TextChunk> chunk(String text) {
+        return chunk(text, 0, null);
+    }
+
+    public List<TextChunk> chunk(String text, int startIndex, Integer pageNumber) {
+        return chunk(text, startIndex, pageNumber, pageNumber);
+    }
+
+    public List<TextChunk> chunk(
+            String text,
+            int startIndex,
+            Integer pageNumber,
+            Integer pdfPageNumber) {
+        if (startIndex < 0) {
+            throw new IllegalArgumentException("start index must not be negative");
+        }
         String normalized = normalize(text);
         if (normalized.isBlank()) {
             return List.of();
@@ -41,7 +56,12 @@ public class TextChunker {
             int end = chooseBreakPoint(normalized, start, targetEnd);
             String content = normalized.substring(start, end).trim();
             if (!content.isBlank()) {
-                chunks.add(new TextChunk(chunks.size(), content, estimateTokenCount(content)));
+                chunks.add(new TextChunk(
+                        startIndex + chunks.size(),
+                        content,
+                        estimateTokenCount(content),
+                        pageNumber,
+                        pdfPageNumber));
             }
             if (end >= normalized.length()) {
                 break;

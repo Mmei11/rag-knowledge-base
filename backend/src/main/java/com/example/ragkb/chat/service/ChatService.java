@@ -25,6 +25,8 @@ import com.example.ragkb.rag.prompt.PromptBuilder;
 import com.example.ragkb.rag.service.RagRetrievalService;
 import com.example.ragkb.security.CurrentUser;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -86,9 +88,22 @@ public class ChatService {
     @Transactional(readOnly = true)
     public List<ChatMessageResponse> listMessages(CurrentUser currentUser, Long sessionId) {
         findSession(currentUser, sessionId);
-        return chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)
+        List<ChatMessage> messages = chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        if (messages.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<ChatReferenceResponse>> referencesByMessage = messageReferenceRepository
+                .findDetailsByMessageIdIn(messages.stream().map(ChatMessage::getId).toList())
                 .stream()
-                .map(ChatMessageResponse::from)
+                .collect(Collectors.groupingBy(
+                        reference -> reference.getMessageId(),
+                        Collectors.mapping(ChatReferenceResponse::from, Collectors.toList())));
+
+        return messages.stream()
+                .map(message -> ChatMessageResponse.from(
+                        message,
+                        referencesByMessage.getOrDefault(message.getId(), List.of())))
                 .toList();
     }
 

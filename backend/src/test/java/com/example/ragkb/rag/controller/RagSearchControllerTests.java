@@ -53,7 +53,15 @@ class RagSearchControllerTests {
                         10L,
                         "Spring Boot",
                         3,
-                        List.of(new RetrievedChunkResponse(200L, 100L, 0, "Spring Boot notes", 0.87))));
+                        List.of(new RetrievedChunkResponse(
+                                200L,
+                                100L,
+                                0,
+                                "Spring Boot notes",
+                                0.87,
+                                "spring-boot.pdf",
+                                3,
+                                5))));
 
         mockMvc.perform(post("/api/search/vector")
                         .with(authentication(currentUserAuthentication()))
@@ -69,7 +77,10 @@ class RagSearchControllerTests {
                 .andExpect(jsonPath("$.data.knowledgeBaseId").value(10))
                 .andExpect(jsonPath("$.data.question").value("Spring Boot"))
                 .andExpect(jsonPath("$.data.items[0].chunkId").value(200))
-                .andExpect(jsonPath("$.data.items[0].similarity").value(0.87));
+                .andExpect(jsonPath("$.data.items[0].similarity").value(0.87))
+                .andExpect(jsonPath("$.data.items[0].fileName").value("spring-boot.pdf"))
+                .andExpect(jsonPath("$.data.items[0].pageNumber").value(3))
+                .andExpect(jsonPath("$.data.items[0].pdfPageNumber").value(5));
     }
 
     @Test

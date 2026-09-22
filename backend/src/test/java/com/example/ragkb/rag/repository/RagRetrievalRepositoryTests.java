@@ -49,6 +49,9 @@ class RagRetrievalRepositoryTests {
         when(rs.getInt("chunk_index")).thenReturn(0);
         when(rs.getString("content")).thenReturn("Spring Boot notes");
         when(rs.getDouble("similarity")).thenReturn(0.87);
+        when(rs.getString("file_name")).thenReturn("spring-boot.pdf");
+        when(rs.getObject("page_number", Integer.class)).thenReturn(3);
+        when(rs.getObject("pdf_page_number", Integer.class)).thenReturn(5);
 
         JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
         RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
@@ -66,5 +69,8 @@ class RagRetrievalRepositoryTests {
         assertThat(items.getFirst().chunkId()).isEqualTo(200L);
         assertThat(items.getFirst().documentId()).isEqualTo(100L);
         assertThat(items.getFirst().similarity()).isEqualTo(0.87);
+        assertThat(items.getFirst().fileName()).isEqualTo("spring-boot.pdf");
+        assertThat(items.getFirst().pageNumber()).isEqualTo(3);
+        assertThat(items.getFirst().pdfPageNumber()).isEqualTo(5);
     }
 }

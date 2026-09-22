@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { ApiError, chatApi, knowledgeBaseApi } from '../api/http'
 import { StatusMessage } from '../components/StatusMessage'
 import type {
@@ -12,6 +12,7 @@ import type {
 import { formatDateTime } from '../utils/date'
 
 const DEFAULT_TOP_K = 5
+const REFERENCE_PREVIEW_LIMIT = 320
 const PROMPT_MODE_OPTIONS: Array<{ label: string; value: PromptMode }> = [
   { label: '知识库优先', value: 'KB_FIRST' },
   { label: '严格知识库', value: 'STRICT_KB' },
@@ -38,7 +39,60 @@ function validateSessionTitle(title: string) {
 }
 
 function referenceLabel(reference: ChatReferenceResponse) {
-  return `文档 ${reference.documentId} · Chunk ${reference.chunkIndex}`
+  const fileName = reference.fileName || `文档 ${reference.documentId}`
+  const page = reference.pageNumber ? ` · 第 ${reference.pageNumber} 页` : ''
+  return `${fileName}${page}`
+}
+
+function similarityLabel(similarity: number) {
+  return `${(similarity * 100).toFixed(1)}%`
+}
+
+function questionForMessage(messages: ChatMessageResponse[], messageIndex: number) {
+  for (let index = messageIndex - 1; index >= 0; index -= 1) {
+    if (messages[index].role === 'USER') {
+      return messages[index].content
+    }
+  }
+  return ''
+}
+
+function highlightTerms(question: string) {
+  const ignoredTerms = new Set(['什么', '怎么', '如何', '哪些', '这个', '那个', '一下', '关于', '是否'])
+  const terms = new Set<string>()
+
+  for (const phrase of question.match(/[\u4E00-\u9FFF]{2,}/g) ?? []) {
+    terms.add(phrase)
+    for (let index = 0; index < phrase.length - 1; index += 1) {
+      terms.add(phrase.slice(index, index + 2))
+    }
+  }
+
+  for (const word of question.match(/[a-zA-Z0-9_-]{2,}/g) ?? []) {
+    terms.add(word)
+  }
+
+  return [...terms]
+    .filter((term) => !ignoredTerms.has(term))
+    .sort((left, right) => right.length - left.length)
+    .slice(0, 12)
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function highlightedContent(content: string, question: string): ReactNode {
+  const terms = highlightTerms(question)
+  if (terms.length === 0) {
+    return content
+  }
+
+  const expression = new RegExp(`(${terms.map(escapeRegExp).join('|')})`, 'gi')
+  return content.split(expression).map((part, index) => {
+    const matched = terms.some((term) => term.toLocaleLowerCase() === part.toLocaleLowerCase())
+    return matched ? <mark key={`${part}-${index}`}>{part}</mark> : part
+  })
 }
 
 export function ChatPage() {
@@ -52,6 +106,8 @@ export function ChatPage() {
   const [question, setQuestion] = useState('')
   const [promptMode, setPromptMode] = useState<PromptMode>('KB_FIRST')
   const [activeReference, setActiveReference] = useState<ChatReferenceResponse | null>(null)
+  const [activeReferenceQuestion, setActiveReferenceQuestion] = useState('')
+  const [referenceExpanded, setReferenceExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [answering, setAnswering] = useState(false)
   const [message, setMessage] = useState('')
@@ -110,6 +166,8 @@ export function ChatPage() {
     const items = await chatApi.listMessages(sessionId)
     setMessages(items)
     setActiveReference(null)
+    setActiveReferenceQuestion('')
+    setReferenceExpanded(false)
   }, [])
 
   useEffect(() => {
@@ -121,6 +179,9 @@ export function ChatPage() {
   useEffect(() => {
     if (!selectedSessionId) {
       setMessages([])
+      setActiveReference(null)
+      setActiveReferenceQuestion('')
+      setReferenceExpanded(false)
       return
     }
 
@@ -195,8 +256,9 @@ export function ChatPage() {
     setMessage('')
 
     try {
+      const normalizedQuestion = question.trim()
       const answer = await chatApi.sendMessage(selectedSessionId, {
-        question: question.trim(),
+        question: normalizedQuestion,
         topK: DEFAULT_TOP_K,
         promptMode,
       })
@@ -207,6 +269,8 @@ export function ChatPage() {
       ])
       setQuestion('')
       setActiveReference(answer.references[0] ?? null)
+      setActiveReferenceQuestion(answer.references[0] ? normalizedQuestion : '')
+      setReferenceExpanded(false)
       await loadSessions()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '操作失败')
@@ -292,7 +356,7 @@ export function ChatPage() {
         <StatusMessage error={error} message={message} />
 
         <div className="message-list" ref={messageListRef}>
-          {messages.map((chatMessage) => (
+          {messages.map((chatMessage, messageIndex) => (
             <article
               className={`message-item ${chatMessage.role.toLowerCase()}`}
               key={chatMessage.id}
@@ -306,11 +370,21 @@ export function ChatPage() {
                 <div className="reference-list">
                   {chatMessage.references.map((reference) => (
                     <button
+                      aria-pressed={activeReference?.chunkId === reference.chunkId}
+                      className={
+                        activeReference?.chunkId === reference.chunkId
+                          ? 'active'
+                          : undefined
+                      }
                       key={`${chatMessage.id}-${reference.chunkId}`}
-                      onClick={() => setActiveReference(reference)}
+                      onClick={() => {
+                        setActiveReference(reference)
+                        setActiveReferenceQuestion(questionForMessage(messages, messageIndex))
+                        setReferenceExpanded(false)
+                      }}
                       type="button"
                     >
-                      {referenceLabel(reference)}
+                      {referenceLabel(reference)} · {similarityLabel(reference.similarity)}
                     </button>
                   ))}
                 </div>
@@ -375,10 +449,11 @@ export function ChatPage() {
 
         {activeReference ? (
           <article className="reference-preview">
+            <h3>{referenceLabel(activeReference)}</h3>
             <dl>
               <div>
-                <dt>文档 ID</dt>
-                <dd>{activeReference.documentId}</dd>
+                <dt>页码</dt>
+                <dd>{activeReference.pageNumber ? `第 ${activeReference.pageNumber} 页` : '无'}</dd>
               </div>
               <div>
                 <dt>Chunk</dt>
@@ -386,10 +461,27 @@ export function ChatPage() {
               </div>
               <div>
                 <dt>相似度</dt>
-                <dd>{activeReference.similarity.toFixed(4)}</dd>
+                <dd>{similarityLabel(activeReference.similarity)}</dd>
               </div>
             </dl>
-            <p>{activeReference.content}</p>
+            <p>
+              {highlightedContent(
+                referenceExpanded
+                  ? activeReference.content
+                  : activeReference.content.slice(0, REFERENCE_PREVIEW_LIMIT),
+                activeReferenceQuestion,
+              )}
+              {!referenceExpanded && activeReference.content.length > REFERENCE_PREVIEW_LIMIT ? '…' : ''}
+            </p>
+            {activeReference.content.length > REFERENCE_PREVIEW_LIMIT && (
+              <button
+                className="reference-content-toggle"
+                onClick={() => setReferenceExpanded((current) => !current)}
+                type="button"
+              >
+                {referenceExpanded ? '收起内容' : '展开全文'}
+              </button>
+            )}
           </article>
         ) : (
           <div className="empty-state">点击回答下方的引用查看片段</div>

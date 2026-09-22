@@ -10,6 +10,8 @@ import com.example.ragkb.document.entity.Document;
 import com.example.ragkb.document.entity.DocumentChunk;
 import com.example.ragkb.document.parser.DocumentParser;
 import com.example.ragkb.document.parser.DocumentParserFactory;
+import com.example.ragkb.document.parser.ParsedDocument;
+import com.example.ragkb.document.parser.ParsedPage;
 import com.example.ragkb.document.repository.DocumentChunkEmbeddingRepository;
 import com.example.ragkb.document.repository.DocumentChunkRepository;
 import com.example.ragkb.document.repository.DocumentRepository;
@@ -75,12 +77,13 @@ public class DocumentParseService {
             }
 
             DocumentParser parser = parserFactory.getParser(document.getFileType());
-            String content = normalize(parser.parse(filePath));
+            ParsedDocument parsedDocument = parser.parseDocument(filePath);
+            String content = normalize(parsedDocument.content());
             if (content.isBlank()) {
                 throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "文档内容为空");
             }
 
-            List<TextChunk> chunks = textChunker.chunk(content);
+            List<TextChunk> chunks = chunk(parsedDocument);
             if (chunks.isEmpty()) {
                 throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "文档内容为空");
             }
@@ -93,7 +96,8 @@ public class DocumentParseService {
                             chunk.index(),
                             chunk.content(),
                             chunk.tokenCount(),
-                            null))
+                            chunk.pageNumber(),
+                            chunk.pdfPageNumber()))
                     .toList());
 
             List<EmbeddingVector> embeddings = embeddingService.embedBatch(savedChunks.stream()
@@ -120,6 +124,21 @@ public class DocumentParseService {
                 document.getUserId(),
                 document.getKnowledgeBaseId(),
                 document.getId());
+    }
+
+    private List<TextChunk> chunk(ParsedDocument parsedDocument) {
+        List<TextChunk> chunks = new java.util.ArrayList<>();
+        int nextIndex = 0;
+        for (ParsedPage page : parsedDocument.pages()) {
+            List<TextChunk> pageChunks = textChunker.chunk(
+                    page.content(),
+                    nextIndex,
+                    page.pageNumber(),
+                    page.pdfPageNumber());
+            chunks.addAll(pageChunks);
+            nextIndex += pageChunks.size();
+        }
+        return List.copyOf(chunks);
     }
 
     private String normalize(String content) {

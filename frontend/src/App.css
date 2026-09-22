@@ -840,6 +840,13 @@ select:focus {
   padding: 0 10px;
 }
 
+.reference-list button:hover,
+.reference-list button.active {
+  border-color: #2563eb;
+  color: #1e3a8a;
+  background: #dbeafe;
+}
+
 .question-form {
   display: flex;
   flex: 0 0 auto;
@@ -896,6 +903,13 @@ select:focus {
   padding: 14px;
 }
 
+.reference-preview h3 {
+  overflow-wrap: anywhere;
+  margin: 0 0 12px;
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
 .reference-preview dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -922,6 +936,30 @@ select:focus {
   font-size: 14px;
   line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.reference-preview mark {
+  border-radius: 3px;
+  color: inherit;
+  background: #fef08a;
+  padding: 0 1px;
+}
+
+.reference-content-toggle {
+  margin-top: 12px;
+  border: 0;
+  color: #1d4ed8;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0;
+}
+
+.reference-content-toggle:hover {
+  color: #1e3a8a;
+  text-decoration: underline;
 }
 
 /* 编辑表单和上方描述区域之间的间距。 */
