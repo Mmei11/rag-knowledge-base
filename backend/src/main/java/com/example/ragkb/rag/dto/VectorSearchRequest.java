@@ -1,6 +1,8 @@
 package com.example.ragkb.rag.dto;
 
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,7 +18,15 @@ public record VectorSearchRequest(
 
         @Min(value = 1, message = "topK 必须大于等于 1")
         @Max(value = 20, message = "topK 不能超过 20")
-        Integer topK) {
+        Integer topK,
+
+        @DecimalMin(value = "-1.0", message = "相似度阈值不能小于 -1")
+        @DecimalMax(value = "1.0", message = "相似度阈值不能大于 1")
+        Double similarityThreshold) {
+
+    public VectorSearchRequest(Long knowledgeBaseId, String question, Integer topK) {
+        this(knowledgeBaseId, question, topK, null);
+    }
 
     public int normalizedTopK() {
         return topK == null ? 5 : topK;

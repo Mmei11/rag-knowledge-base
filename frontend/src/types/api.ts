@@ -97,6 +97,7 @@ export type ChatSessionResponse = {
 export type SendChatMessageRequest = {
   question: string
   topK?: number
+  similarityThreshold?: number
   promptMode?: PromptMode
 }
 

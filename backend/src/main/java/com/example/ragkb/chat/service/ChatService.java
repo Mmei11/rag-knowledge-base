@@ -124,7 +124,11 @@ public class ChatService {
 
         VectorSearchResponse searchResponse = ragRetrievalService.search(
                 currentUser,
-                new VectorSearchRequest(session.getKnowledgeBaseId(), question, request.normalizedTopK()));
+                new VectorSearchRequest(
+                        session.getKnowledgeBaseId(),
+                        question,
+                        request.normalizedTopK(),
+                        request.similarityThreshold()));
         List<RetrievedChunkResponse> retrievedChunks = searchResponse.items();
 
         String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode());

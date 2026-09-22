@@ -52,6 +52,9 @@ app:
   embedding:
     provider: ${EMBEDDING_PROVIDER:mock}
     dimension: ${EMBEDDING_DIMENSION:1024}
+  retrieval:
+    similarity-threshold: ${RETRIEVAL_SIMILARITY_THRESHOLD:0.35}
+    candidate-multiplier: ${RETRIEVAL_CANDIDATE_MULTIPLIER:3}
   chat-model:
     provider: ${CHAT_MODEL_PROVIDER:mock}
     model: ${CHAT_MODEL_NAME:mock-chat-model}

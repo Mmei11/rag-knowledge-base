@@ -23,13 +23,14 @@ class RagRetrievalRepositoryTests {
         JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
         RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
         RetrievedChunkResponse item = new RetrievedChunkResponse(200L, 100L, 0, "Spring Boot notes", 0.87);
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any()))
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of(item));
 
         List<RetrievedChunkResponse> items = repository.searchSimilarChunks(
                 10L,
                 new EmbeddingVector(List.of(0.1, -0.2)),
-                3);
+                9,
+                0.35);
 
         assertThat(items).containsExactly(item);
         verify(jdbcTemplate).query(
@@ -38,7 +39,9 @@ class RagRetrievalRepositoryTests {
                 eq("[0.10000000,-0.20000000]"),
                 eq(10L),
                 eq("[0.10000000,-0.20000000]"),
-                eq(3));
+                eq(0.35),
+                eq("[0.10000000,-0.20000000]"),
+                eq(9));
     }
 
     @Test
@@ -55,7 +58,7 @@ class RagRetrievalRepositoryTests {
 
         JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
         RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any()))
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any(), any(), any()))
                 .thenAnswer(invocation -> {
                     RowMapper<RetrievedChunkResponse> mapper = invocation.getArgument(1);
                     return List.of(mapper.mapRow(rs, 0));
@@ -64,7 +67,8 @@ class RagRetrievalRepositoryTests {
         List<RetrievedChunkResponse> items = repository.searchSimilarChunks(
                 10L,
                 new EmbeddingVector(List.of(0.1, -0.2)),
-                3);
+                9,
+                0.35);
 
         assertThat(items.getFirst().chunkId()).isEqualTo(200L);
         assertThat(items.getFirst().documentId()).isEqualTo(100L);
@@ -72,5 +76,22 @@ class RagRetrievalRepositoryTests {
         assertThat(items.getFirst().fileName()).isEqualTo("spring-boot.pdf");
         assertThat(items.getFirst().pageNumber()).isEqualTo(3);
         assertThat(items.getFirst().pdfPageNumber()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldEscapeKeywordWildcardsForLikeSearch() {
+        JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
+        RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
+        ArgumentCaptor<Object[]> parameterCaptor = ArgumentCaptor.forClass(Object[].class);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
+
+        repository.searchKeywordChunks(
+                10L,
+                new EmbeddingVector(List.of(0.1, -0.2)),
+                List.of("Spring_Boot", "100%"),
+                9);
+
+        verify(jdbcTemplate).query(anyString(), any(RowMapper.class), parameterCaptor.capture());
+        assertThat(parameterCaptor.getValue()).contains("%spring!_boot%", "%100!%%");
     }
 }

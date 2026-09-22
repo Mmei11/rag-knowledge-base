@@ -12,6 +12,7 @@ import type {
 import { formatDateTime } from '../utils/date'
 
 const DEFAULT_TOP_K = 5
+const DEFAULT_SIMILARITY_THRESHOLD = 0.35
 const REFERENCE_PREVIEW_LIMIT = 320
 const PROMPT_MODE_OPTIONS: Array<{ label: string; value: PromptMode }> = [
   { label: '知识库优先', value: 'KB_FIRST' },
@@ -97,17 +98,24 @@ function highlightedContent(content: string, question: string): ReactNode {
 
 export function ChatPage() {
   const messageListRef = useRef<HTMLDivElement | null>(null)
+
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseResponse[]>([])
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [messages, setMessages] = useState<ChatMessageResponse[]>([])
+
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<number | null>(null)
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
+
   const [sessionTitle, setSessionTitle] = useState('')
   const [question, setQuestion] = useState('')
   const [promptMode, setPromptMode] = useState<PromptMode>('KB_FIRST')
+  const [topK, setTopK] = useState(DEFAULT_TOP_K)
+  const [similarityThreshold, setSimilarityThreshold] = useState(DEFAULT_SIMILARITY_THRESHOLD)
+
   const [activeReference, setActiveReference] = useState<ChatReferenceResponse | null>(null)
   const [activeReferenceQuestion, setActiveReferenceQuestion] = useState('')
   const [referenceExpanded, setReferenceExpanded] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [answering, setAnswering] = useState(false)
   const [message, setMessage] = useState('')
@@ -259,7 +267,8 @@ export function ChatPage() {
       const normalizedQuestion = question.trim()
       const answer = await chatApi.sendMessage(selectedSessionId, {
         question: normalizedQuestion,
-        topK: DEFAULT_TOP_K,
+        topK,
+        similarityThreshold,
         promptMode,
       })
       setMessages((current) => [
@@ -421,6 +430,28 @@ export function ChatPage() {
                     {option.label}
                   </option>
                 ))}
+              </select>
+            </label>
+            <label>
+              引用数量
+              <select
+                onChange={(event) => setTopK(Number(event.target.value))}
+                value={topK}
+              >
+                <option value={3}>3 条</option>
+                <option value={5}>5 条</option>
+                <option value={8}>8 条</option>
+              </select>
+            </label>
+            <label>
+              最低相关度
+              <select
+                onChange={(event) => setSimilarityThreshold(Number(event.target.value))}
+                value={similarityThreshold}
+              >
+                <option value={0.25}>宽松（25%）</option>
+                <option value={0.35}>标准（35%）</option>
+                <option value={0.5}>严格（50%）</option>
               </select>
             </label>
           </div>

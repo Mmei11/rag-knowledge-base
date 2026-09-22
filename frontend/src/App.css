@@ -859,7 +859,8 @@ select:focus {
 .question-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 12px;
 }
 
