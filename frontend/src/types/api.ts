@@ -65,6 +65,8 @@ export type DocumentResponse = {
   fileType: string
   fileSize: number
   status: DocumentStatus
+  parseProgress: number
+  parseStage: string | null
   errorMessage: string | null
   createdAt: string
   updatedAt: string
@@ -73,6 +75,8 @@ export type DocumentResponse = {
 export type DocumentStatusResponse = {
   id: number
   status: DocumentStatus
+  parseProgress: number
+  parseStage: string | null
   errorMessage: string | null
   updatedAt: string
 }
@@ -98,6 +102,9 @@ export type SendChatMessageRequest = {
   question: string
   topK?: number
   similarityThreshold?: number
+  documentIds?: number[]
+  startDate?: string
+  endDate?: string
   promptMode?: PromptMode
 }
 

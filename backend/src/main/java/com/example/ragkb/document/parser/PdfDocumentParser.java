@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntConsumer;
 import java.util.regex.Pattern;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -30,13 +31,21 @@ public class PdfDocumentParser implements DocumentParser {
 
     @Override
     public ParsedDocument parseDocument(Path filePath) {
+        return parseDocument(filePath, ignored -> {
+        });
+    }
+
+    @Override
+    public ParsedDocument parseDocument(Path filePath, IntConsumer onProgress) {
         try (PDDocument document = Loader.loadPDF(filePath.toFile())) {
             PDFTextStripper textStripper = new PDFTextStripper();
             List<String> pageContents = new ArrayList<>();
-            for (int pageNumber = 1; pageNumber <= document.getNumberOfPages(); pageNumber++) {
+            int totalPages = document.getNumberOfPages();
+            for (int pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
                 textStripper.setStartPage(pageNumber);
                 textStripper.setEndPage(pageNumber);
                 pageContents.add(textStripper.getText(document));
+                onProgress.accept(pageNumber * 100 / totalPages);
             }
 
             int restartPage = findSecondPrintedPageOne(pageContents);

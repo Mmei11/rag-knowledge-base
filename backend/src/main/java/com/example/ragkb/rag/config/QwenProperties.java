@@ -13,9 +13,11 @@ public class QwenProperties {
 
     private String chatModel = "qwen-plus";
 
-    private String embeddingModel = "text-embedding-v4";
+    private String embeddingModel = "qwen3.7-text-embedding-flash";
 
-    private int embeddingBatchSize = 10;
+    private int embeddingBatchSize = 20;
+
+    private int embeddingConcurrency = 3;
 
     public String getApiKey() {
         return apiKey;
@@ -67,6 +69,17 @@ public class QwenProperties {
             throw new IllegalArgumentException("Qwen embedding batch size must be positive");
         }
         this.embeddingBatchSize = embeddingBatchSize;
+    }
+
+    public int getEmbeddingConcurrency() {
+        return embeddingConcurrency;
+    }
+
+    public void setEmbeddingConcurrency(int embeddingConcurrency) {
+        if (embeddingConcurrency <= 0 || embeddingConcurrency > 8) {
+            throw new IllegalArgumentException("Qwen embedding concurrency must be between 1 and 8");
+        }
+        this.embeddingConcurrency = embeddingConcurrency;
     }
 
     public String requireApiKey() {

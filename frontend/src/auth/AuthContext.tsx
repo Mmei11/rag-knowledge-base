@@ -1,6 +1,6 @@
 import {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react'
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [navigate],
   )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     configureHttpAuth({
       getAccessToken: () => loadSession()?.token ?? null,
       onUnauthorized: signOut,

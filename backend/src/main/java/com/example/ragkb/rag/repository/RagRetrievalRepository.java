@@ -1,6 +1,7 @@
 package com.example.ragkb.rag.repository;
 
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
+import com.example.ragkb.rag.dto.RetrievalFilters;
 import com.example.ragkb.rag.model.EmbeddingVector;
 import com.example.ragkb.rag.model.PgVectorFormatter;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class RagRetrievalRepository {
             WHERE c.knowledge_base_id = ?
               AND c.embedding IS NOT NULL
               AND 1 - (c.embedding <=> CAST(? AS vector)) >= ?
+            %s
             ORDER BY c.embedding <=> CAST(? AS vector)
             LIMIT ?
             """;
@@ -39,6 +41,7 @@ public class RagRetrievalRepository {
                   to_tsvector('simple', c.content) @@ websearch_to_tsquery('simple', ?)
                   OR (%s)
               )
+            %s
             ORDER BY keyword_score DESC, c.embedding <=> CAST(? AS vector)
             LIMIT ?
             """;
@@ -53,11 +56,21 @@ public class RagRetrievalRepository {
             Long knowledgeBaseId,
             EmbeddingVector queryEmbedding,
             int candidateLimit,
-            double similarityThreshold) {
+            double similarityThreshold,
+            RetrievalFilters filters) {
         String vector = PgVectorFormatter.format(queryEmbedding);
+        String sql = SEARCH_SQL.formatted(filterSql(filters));
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(vector);
+        parameters.add(knowledgeBaseId);
+        parameters.add(vector);
+        parameters.add(similarityThreshold);
+        addFilterParameters(parameters, filters);
+        parameters.add(vector);
+        parameters.add(candidateLimit);
 
         return jdbcTemplate.query(
-                SEARCH_SQL,
+                sql,
                 (rs, rowNum) -> new RetrievedChunkResponse(
                         rs.getLong("id"),
                         rs.getLong("document_id"),
@@ -67,19 +80,15 @@ public class RagRetrievalRepository {
                         rs.getString("file_name"),
                         rs.getObject("page_number", Integer.class),
                         rs.getObject("pdf_page_number", Integer.class)),
-                vector,
-                knowledgeBaseId,
-                vector,
-                similarityThreshold,
-                vector,
-                candidateLimit);
+                parameters.toArray());
     }
 
     public List<RetrievedChunkResponse> searchKeywordChunks(
             Long knowledgeBaseId,
             EmbeddingVector queryEmbedding,
             List<String> keywords,
-            int candidateLimit) {
+            int candidateLimit,
+            RetrievalFilters filters) {
         if (keywords.isEmpty()) {
             return List.of();
         }
@@ -92,7 +101,7 @@ public class RagRetrievalRepository {
         String likeCondition = String.join(" OR ", keywords.stream()
                 .map(keyword -> "LOWER(c.content) LIKE ? ESCAPE '!'")
                 .toList());
-        String sql = KEYWORD_SEARCH_SQL.formatted(likeScore, likeCondition);
+        String sql = KEYWORD_SEARCH_SQL.formatted(likeScore, likeCondition, filterSql(filters));
 
         List<Object> parameters = new ArrayList<>();
         parameters.add(vector);
@@ -101,6 +110,7 @@ public class RagRetrievalRepository {
         parameters.add(knowledgeBaseId);
         parameters.add(keywordQuery);
         keywords.forEach(keyword -> parameters.add(toLikePattern(keyword)));
+        addFilterParameters(parameters, filters);
         parameters.add(vector);
         parameters.add(candidateLimit);
 
@@ -124,5 +134,32 @@ public class RagRetrievalRepository {
                 .replace("%", "!%")
                 .replace("_", "!_");
         return "%" + escaped + "%";
+    }
+
+    private String filterSql(RetrievalFilters filters) {
+        StringBuilder sql = new StringBuilder();
+        if (filters.hasDocumentIds()) {
+            sql.append(" AND c.document_id IN (")
+                    .append("?,".repeat(filters.documentIds().size()));
+            sql.setLength(sql.length() - 1);
+            sql.append(')');
+        }
+        if (filters.startDate() != null) {
+            sql.append(" AND d.created_at >= ?");
+        }
+        if (filters.endDate() != null) {
+            sql.append(" AND d.created_at < ?");
+        }
+        return sql.toString();
+    }
+
+    private void addFilterParameters(List<Object> parameters, RetrievalFilters filters) {
+        parameters.addAll(filters.documentIds());
+        if (filters.startDate() != null) {
+            parameters.add(filters.startDate());
+        }
+        if (filters.endDate() != null) {
+            parameters.add(filters.endDate().plusDays(1));
+        }
     }
 }

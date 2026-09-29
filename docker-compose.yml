@@ -72,8 +72,17 @@ services:
       QWEN_API_KEY: ${QWEN_API_KEY:-}
       QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
       QWEN_CHAT_MODEL: ${QWEN_CHAT_MODEL:-qwen-plus}
-      QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-text-embedding-v4}
-      QWEN_EMBEDDING_BATCH_SIZE: ${QWEN_EMBEDDING_BATCH_SIZE:-10}
+      QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-qwen3.7-text-embedding-flash}
+      QWEN_EMBEDDING_BATCH_SIZE: ${QWEN_EMBEDDING_BATCH_SIZE:-20}
+      QWEN_EMBEDDING_CONCURRENCY: ${QWEN_EMBEDDING_CONCURRENCY:-3}
+      # The host uses a local proxy. Containers cannot reach 127.0.0.1 on the
+      # host directly, so use Docker Desktop's host gateway for Qwen/OpenAI.
+      HTTP_PROXY: ${HTTP_PROXY:-http://host.docker.internal:12450}
+      HTTPS_PROXY: ${HTTPS_PROXY:-http://host.docker.internal:12450}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,postgres,redis,.local,host.docker.internal}
+      # Java's HTTP client reads these JVM properties rather than the proxy
+      # environment variables above.
+      JAVA_TOOL_OPTIONS: ${BACKEND_JAVA_TOOL_OPTIONS:--Dhttp.proxyHost=host.docker.internal -Dhttp.proxyPort=12450 -Dhttps.proxyHost=host.docker.internal -Dhttps.proxyPort=12450 -Dhttp.nonProxyHosts=localhost|127.*|postgres|redis|*.local}
       CHAT_RATE_LIMIT_ENABLED: ${CHAT_RATE_LIMIT_ENABLED:-true}
       CHAT_RATE_LIMIT_LIMIT: ${CHAT_RATE_LIMIT_LIMIT:-20}
       CHAT_RATE_LIMIT_WINDOW_SECONDS: ${CHAT_RATE_LIMIT_WINDOW_SECONDS:-60}

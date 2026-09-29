@@ -1,6 +1,7 @@
 package com.example.ragkb.document.parser;
 
 import java.nio.file.Path;
+import java.util.function.IntConsumer;
 
 public interface DocumentParser {
 
@@ -10,5 +11,11 @@ public interface DocumentParser {
 
     default ParsedDocument parseDocument(Path filePath) {
         return ParsedDocument.single(parse(filePath));
+    }
+
+    default ParsedDocument parseDocument(Path filePath, IntConsumer onProgress) {
+        ParsedDocument parsedDocument = parseDocument(filePath);
+        onProgress.accept(100);
+        return parsedDocument;
     }
 }

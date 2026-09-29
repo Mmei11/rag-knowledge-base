@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import { ApiError, chatApi, knowledgeBaseApi } from '../api/http'
+import { ApiError, chatApi, documentApi, knowledgeBaseApi } from '../api/http'
 import { StatusMessage } from '../components/StatusMessage'
 import type {
   ChatMessageResponse,
   ChatReferenceResponse,
   ChatSessionResponse,
+  DocumentResponse,
   KnowledgeBaseResponse,
   PromptMode,
 } from '../types/api'
@@ -98,8 +99,10 @@ function highlightedContent(content: string, question: string): ReactNode {
 
 export function ChatPage() {
   const messageListRef = useRef<HTMLDivElement | null>(null)
+  const documentFilterRef = useRef<HTMLDivElement | null>(null)
 
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseResponse[]>([])
+  const [documents, setDocuments] = useState<DocumentResponse[]>([])
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [messages, setMessages] = useState<ChatMessageResponse[]>([])
 
@@ -111,6 +114,10 @@ export function ChatPage() {
   const [promptMode, setPromptMode] = useState<PromptMode>('KB_FIRST')
   const [topK, setTopK] = useState(DEFAULT_TOP_K)
   const [similarityThreshold, setSimilarityThreshold] = useState(DEFAULT_SIMILARITY_THRESHOLD)
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([])
+  const [documentFilterOpen, setDocumentFilterOpen] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const [activeReference, setActiveReference] = useState<ChatReferenceResponse | null>(null)
   const [activeReferenceQuestion, setActiveReferenceQuestion] = useState('')
@@ -133,6 +140,19 @@ export function ChatPage() {
       ) ?? null,
     [knowledgeBases, selectedKnowledgeBaseId],
   )
+
+  const documentFilterLabel = useMemo(() => {
+    if (documents.length === 0) {
+      return '暂无已解析文档'
+    }
+    if (selectedDocumentIds.length === 0) {
+      return '全部已解析文档'
+    }
+    if (selectedDocumentIds.length === 1) {
+      return documents.find((document) => document.id === selectedDocumentIds[0])?.fileName ?? '已选择 1 个文档'
+    }
+    return `已选择 ${selectedDocumentIds.length} 个文档`
+  }, [documents, selectedDocumentIds])
 
   const runAction = useCallback(async (action: () => Promise<void>) => {
     setLoading(true)
@@ -170,6 +190,15 @@ export function ChatPage() {
     })
   }, [])
 
+  const loadFilterDocuments = useCallback(async (knowledgeBaseId: number) => {
+    const items = await documentApi.listByKnowledgeBase(knowledgeBaseId)
+    const completedItems = items.filter((document) => document.status === 'COMPLETED')
+    setDocuments(completedItems)
+    setSelectedDocumentIds((current) =>
+      current.filter((documentId) => completedItems.some((document) => document.id === documentId)),
+    )
+  }, [])
+
   const loadMessages = useCallback(async (sessionId: number) => {
     const items = await chatApi.listMessages(sessionId)
     setMessages(items)
@@ -183,6 +212,41 @@ export function ChatPage() {
       await Promise.all([loadKnowledgeBases(), loadSessions()])
     })
   }, [loadKnowledgeBases, loadSessions, runAction])
+
+  useEffect(() => {
+    if (!selectedKnowledgeBaseId) {
+      setDocuments([])
+      setSelectedDocumentIds([])
+      return
+    }
+
+    void runAction(() => loadFilterDocuments(selectedKnowledgeBaseId))
+  }, [loadFilterDocuments, runAction, selectedKnowledgeBaseId])
+
+  useEffect(() => {
+    if (!documentFilterOpen) {
+      return
+    }
+
+    function closeDocumentFilter(event: PointerEvent) {
+      if (!documentFilterRef.current?.contains(event.target as Node)) {
+        setDocumentFilterOpen(false)
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setDocumentFilterOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeDocumentFilter)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeDocumentFilter)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [documentFilterOpen])
 
   useEffect(() => {
     if (!selectedSessionId) {
@@ -208,10 +272,7 @@ export function ChatPage() {
       return
     }
 
-    messageList.scrollTo({
-      top: messageList.scrollHeight,
-      behavior: 'smooth',
-    })
+    messageList.scrollTop = messageList.scrollHeight
   }, [messages, answering, selectedSessionId])
 
   async function handleCreateSession(event: FormEvent<HTMLFormElement>) {
@@ -259,6 +320,12 @@ export function ChatPage() {
       return
     }
 
+    if (startDate && endDate && startDate > endDate) {
+      setError('开始日期不能晚于结束日期')
+      setMessage('')
+      return
+    }
+
     setAnswering(true)
     setError('')
     setMessage('')
@@ -269,6 +336,9 @@ export function ChatPage() {
         question: normalizedQuestion,
         topK,
         similarityThreshold,
+        documentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         promptMode,
       })
       setMessages((current) => [
@@ -286,6 +356,14 @@ export function ChatPage() {
     } finally {
       setAnswering(false)
     }
+  }
+
+  function toggleDocumentSelection(documentId: number) {
+    setSelectedDocumentIds((current) =>
+      current.includes(documentId)
+        ? current.filter((id) => id !== documentId)
+        : [...current, documentId],
+    )
   }
 
   return (
@@ -453,6 +531,80 @@ export function ChatPage() {
                 <option value={0.35}>标准（35%）</option>
                 <option value={0.5}>严格（50%）</option>
               </select>
+            </label>
+          </div>
+          <div className="question-filter-row">
+            <div className="document-filter" ref={documentFilterRef}>
+              <span className="filter-label">检索文档</span>
+              <div className="document-filter-control">
+                <button
+                  aria-expanded={documentFilterOpen}
+                  aria-haspopup="listbox"
+                  className="document-filter-trigger"
+                  disabled={documents.length === 0}
+                  onClick={() => setDocumentFilterOpen((current) => !current)}
+                  type="button"
+                >
+                  <span title={documentFilterLabel}>{documentFilterLabel}</span>
+                  <span aria-hidden="true" className="document-filter-chevron">⌄</span>
+                </button>
+
+                {documentFilterOpen && (
+                  <div aria-multiselectable="true" className="document-filter-menu" role="listbox">
+                    <div className="document-filter-menu-header">
+                      <span>选择要检索的文档</span>
+                      <div className="document-filter-menu-actions">
+                        <button
+                          disabled={selectedDocumentIds.length === documents.length}
+                          onClick={() => setSelectedDocumentIds(documents.map((document) => document.id))}
+                          type="button"
+                        >
+                          全选
+                        </button>
+                        {selectedDocumentIds.length > 0 && (
+                          <button onClick={() => setSelectedDocumentIds([])} type="button">
+                            清空
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {documents.map((document) => {
+                      const selected = selectedDocumentIds.includes(document.id)
+                      return (
+                        <button
+                          aria-selected={selected}
+                          className={selected ? 'document-filter-option selected' : 'document-filter-option'}
+                          key={document.id}
+                          onClick={() => toggleDocumentSelection(document.id)}
+                          role="option"
+                          type="button"
+                        >
+                          <span title={document.fileName}>{document.fileName}</span>
+                          <span aria-hidden="true" className="document-filter-check">
+                            {selected ? '✓' : ''}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+            <label>
+              上传开始日期
+              <input
+                onChange={(event) => setStartDate(event.target.value)}
+                type="date"
+                value={startDate}
+              />
+            </label>
+            <label>
+              上传结束日期
+              <input
+                onChange={(event) => setEndDate(event.target.value)}
+                type="date"
+                value={endDate}
+              />
             </label>
           </div>
           <div className="question-input-row">

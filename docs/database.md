@@ -57,6 +57,8 @@ documents
 
 保存上传文档的元数据，包括文件名、类型、大小、存储路径和处理状态。
 
+处理中的文档还会保存 `parse_progress`（0–100）和 `parse_stage`，供前端轮询显示实时解析进度。已有数据库需要先执行 `docker/postgres/migrations/20260928_add_document_parse_progress.sql`。
+
 状态包括：
 
 ```text

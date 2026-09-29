@@ -630,6 +630,40 @@ select:focus {
   font-size: 13px;
 }
 
+.document-parse-progress {
+  margin-top: 12px;
+  max-width: 560px;
+}
+
+.document-parse-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.document-parse-progress-label strong {
+  color: #1d4ed8;
+  font-variant-numeric: tabular-nums;
+}
+
+.document-parse-progress-track {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+
+.document-parse-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  transition: width 0.35s ease;
+}
+
 .document-status {
   flex: 0 0 auto;
   border-radius: 999px;
@@ -770,7 +804,6 @@ select:focus {
   min-height: 0;
   overscroll-behavior: contain;
   padding: 8px 4px 18px;
-  scroll-behavior: smooth;
 }
 
 .message-item {
@@ -856,25 +889,237 @@ select:focus {
   padding-top: 12px;
 }
 
-.question-toolbar {
-  display: flex;
+.question-toolbar,
+.question-filter-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-start;
   gap: 12px;
 }
 
-.question-toolbar label {
-  display: flex;
+.question-toolbar label,
+.question-filter-row label,
+.question-filter-row .document-filter {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  width: fit-content;
+  min-width: 0;
+}
+
+.question-toolbar label {
+  position: relative;
+}
+
+.question-toolbar label::after {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #0f172a;
+  border-bottom: 2px solid #0f172a;
+  content: "";
+  pointer-events: none;
+  transform: translateY(-72%) rotate(45deg);
+}
+
+.question-toolbar select,
+.question-filter-row input,
+.question-filter-row select {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
 }
 
 .question-toolbar select {
-  width: 160px;
+  appearance: none;
+  font-weight: 600;
+  padding-right: 36px;
+}
+
+.question-filter-row .document-filter {
+  width: 100%;
+}
+
+.filter-label {
+  flex: 0 0 auto;
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.document-filter-control {
+  position: relative;
+  width: min(220px, 100%);
+  min-width: 0;
+}
+
+.document-filter-trigger {
+  position: relative;
+  display: flex;
+  width: 100%;
   min-height: 36px;
-  padding: 7px 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-strong);
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 7px 36px 7px 10px;
+  text-align: left;
+}
+
+.document-filter-trigger > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-filter-trigger:hover:not(:disabled),
+.document-filter-trigger[aria-expanded="true"] {
+  border-color: #2563eb;
+}
+
+.document-filter-trigger:focus-visible,
+.document-filter-option:focus-visible,
+.document-filter-menu-header button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.document-filter-trigger:disabled {
+  cursor: not-allowed;
+  color: var(--text-muted);
+  background: #f8fafc;
+}
+
+.document-filter-chevron {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #0f172a;
+  border-bottom: 2px solid #0f172a;
+  font-size: 0;
+  pointer-events: none;
+  transform: translateY(-72%) rotate(45deg);
+  transition: transform 0.16s ease;
+}
+
+.document-filter-trigger[aria-expanded="true"] .document-filter-chevron {
+  transform: translateY(-25%) rotate(225deg);
+}
+
+.document-filter-menu {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 6px);
+  right: auto;
+  left: 0;
+  width: min(480px, calc(100vw - 48px));
+  min-width: 100%;
+  box-sizing: border-box;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  padding: 6px;
+}
+
+.document-filter-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 6px 7px;
+}
+
+.document-filter-menu-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.document-filter-menu-header button {
+  border: 0;
+  border-radius: 4px;
+  color: #2563eb;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 5px;
+}
+
+.document-filter-menu-header button:hover {
+  background: #eff6ff;
+}
+
+.document-filter-menu-header button:disabled {
+  cursor: default;
+  color: #94a3b8;
+  background: transparent;
+}
+
+.document-filter-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text-strong);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 6px;
+  text-align: left;
+}
+
+.document-filter-option:hover,
+.document-filter-option.selected {
+  background: #eff6ff;
+}
+
+.document-filter-option > span:first-child {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.document-filter-check {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.document-filter-option.selected .document-filter-check {
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 .question-input-row {
@@ -1038,6 +1283,24 @@ select:focus {
 
   .question-form {
     gap: 10px;
+  }
+
+  .question-toolbar,
+  .question-filter-row {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .question-toolbar label,
+  .question-filter-row label,
+  .question-filter-row .document-filter {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .question-toolbar select,
+  .question-filter-row input,
+  .document-filter-control {
+    width: 100%;
   }
 
   .question-input-row {

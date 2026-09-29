@@ -21,8 +21,9 @@ CHAT_MODEL_PROVIDER=qwen
 QWEN_API_KEY=你的百炼 API Key
 QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 QWEN_CHAT_MODEL=qwen-plus
-QWEN_EMBEDDING_MODEL=text-embedding-v4
-QWEN_EMBEDDING_BATCH_SIZE=10
+QWEN_EMBEDDING_MODEL=qwen3.7-text-embedding-flash
+QWEN_EMBEDDING_BATCH_SIZE=20
+QWEN_EMBEDDING_CONCURRENCY=3
 EMBEDDING_DIMENSION=1024
 ```
 
@@ -47,6 +48,12 @@ backend/src/main/java/com/example/ragkb/rag/model/QwenChatModelService.java
 
 `QwenEmbeddingService` 在 `EMBEDDING_PROVIDER=qwen` 时生效，调用 `/embeddings` 接口生成文本向量。
 
+`QWEN_EMBEDDING_BATCH_SIZE` 控制单个向量请求包含的文本片段数；
+`QWEN_EMBEDDING_CONCURRENCY` 限制同时发出的向量请求数。对
+`qwen3.7-text-embedding-flash`，推荐保持 `20` 和 `3`，在吞吐与限流之间取得平衡。
+系统使用滑动窗口调度：每完成一个请求批次才提交下一个，因此超大文档也只会保留
+最多 `QWEN_EMBEDDING_CONCURRENCY` 个向量任务，不会撑满任务队列。
+
 `QwenChatModelService` 在 `CHAT_MODEL_PROVIDER=qwen` 时生效，调用 `/chat/completions` 接口生成回答。
 
 ## 向量维度
@@ -62,6 +69,9 @@ embedding VECTOR(1024)
 ```text
 EMBEDDING_DIMENSION=1024
 ```
+
+切换 embedding 模型时，即使维度相同，也必须重新解析已有文档以生成同一语义空间的向量；
+不要将不同模型生成的文档向量混用于同一个知识库检索。
 
 如果你的本地 PostgreSQL 容器是在旧版本 schema 下创建的，里面可能还是 `vector(384)`。切换 Qwen 前需要重建本地数据卷：
 

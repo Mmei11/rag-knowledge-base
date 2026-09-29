@@ -7,6 +7,8 @@ import java.time.OffsetDateTime;
 public record DocumentStatusResponse(
         Long id,
         DocumentStatus status,
+        int parseProgress,
+        String parseStage,
         String errorMessage,
         OffsetDateTime updatedAt) {
 
@@ -14,6 +16,8 @@ public record DocumentStatusResponse(
         return new DocumentStatusResponse(
                 document.getId(),
                 document.getStatus(),
+                document.getParseProgress(),
+                document.getParseStage(),
                 document.getErrorMessage(),
                 document.getUpdatedAt());
     }

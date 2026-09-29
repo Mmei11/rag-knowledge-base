@@ -175,7 +175,9 @@ CHAT_MODEL_PROVIDER=qwen
 QWEN_API_KEY=你的百炼 API Key
 QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 QWEN_CHAT_MODEL=qwen-plus
-QWEN_EMBEDDING_MODEL=text-embedding-v4
+QWEN_EMBEDDING_MODEL=qwen3.7-text-embedding-flash
+QWEN_EMBEDDING_BATCH_SIZE=20
+QWEN_EMBEDDING_CONCURRENCY=3
 EMBEDDING_DIMENSION=1024
 ```
 

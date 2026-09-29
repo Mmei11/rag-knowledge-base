@@ -128,7 +128,10 @@ public class ChatService {
                         session.getKnowledgeBaseId(),
                         question,
                         request.normalizedTopK(),
-                        request.similarityThreshold()));
+                        request.similarityThreshold(),
+                        request.normalizedDocumentIds(),
+                        request.startDate(),
+                        request.endDate()));
         List<RetrievedChunkResponse> retrievedChunks = searchResponse.items();
 
         String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode());

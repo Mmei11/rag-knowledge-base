@@ -8,8 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
+import com.example.ragkb.rag.dto.RetrievalFilters;
 import com.example.ragkb.rag.model.EmbeddingVector;
 import java.sql.ResultSet;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,7 +32,8 @@ class RagRetrievalRepositoryTests {
                 10L,
                 new EmbeddingVector(List.of(0.1, -0.2)),
                 9,
-                0.35);
+                0.35,
+                new RetrievalFilters(null, null, null));
 
         assertThat(items).containsExactly(item);
         verify(jdbcTemplate).query(
@@ -68,7 +71,8 @@ class RagRetrievalRepositoryTests {
                 10L,
                 new EmbeddingVector(List.of(0.1, -0.2)),
                 9,
-                0.35);
+                0.35,
+                new RetrievalFilters(null, null, null));
 
         assertThat(items.getFirst().chunkId()).isEqualTo(200L);
         assertThat(items.getFirst().documentId()).isEqualTo(100L);
@@ -89,9 +93,34 @@ class RagRetrievalRepositoryTests {
                 10L,
                 new EmbeddingVector(List.of(0.1, -0.2)),
                 List.of("Spring_Boot", "100%"),
-                9);
+                9,
+                new RetrievalFilters(null, null, null));
 
         verify(jdbcTemplate).query(anyString(), any(RowMapper.class), parameterCaptor.capture());
         assertThat(parameterCaptor.getValue()).contains("%spring!_boot%", "%100!%%");
+    }
+
+    @Test
+    void shouldAddDocumentAndInclusiveDateFiltersToVectorSearch() {
+        JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
+        RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+
+        repository.searchSimilarChunks(
+                10L,
+                new EmbeddingVector(List.of(0.1, -0.2)),
+                9,
+                0.35,
+                new RetrievalFilters(
+                        List.of(100L, 101L), LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20)));
+
+        verify(jdbcTemplate).query(
+                sqlCaptor.capture(),
+                any(RowMapper.class),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        assertThat(sqlCaptor.getValue()).contains(
+                "c.document_id IN (?,?)",
+                "d.created_at >= ?",
+                "d.created_at < ?");
     }
 }

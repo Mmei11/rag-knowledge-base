@@ -45,6 +45,12 @@ public class Document {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Column(name = "parse_progress", nullable = false)
+    private int parseProgress;
+
+    @Column(name = "parse_stage", length = 100)
+    private String parseStage = "等待解析";
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -72,21 +78,36 @@ public class Document {
     public void markProcessing() {
         status = DocumentStatus.PROCESSING;
         errorMessage = null;
+        parseProgress = 0;
+        parseStage = "准备解析";
     }
 
     public void markPending() {
         status = DocumentStatus.PENDING;
         errorMessage = null;
+        parseProgress = 0;
+        parseStage = "等待解析";
     }
 
     public void markCompleted() {
         status = DocumentStatus.COMPLETED;
         errorMessage = null;
+        parseProgress = 100;
+        parseStage = "解析完成";
     }
 
     public void markFailed(String errorMessage) {
         status = DocumentStatus.FAILED;
         this.errorMessage = errorMessage;
+        parseStage = "解析失败";
+    }
+
+    public void updateParseProgress(int progress, String stage) {
+        if (progress < 0 || progress > 100) {
+            throw new IllegalArgumentException("parse progress must be between 0 and 100");
+        }
+        parseProgress = progress;
+        parseStage = stage;
     }
 
     @PrePersist
@@ -135,6 +156,14 @@ public class Document {
 
     public String getErrorMessage() {
         return errorMessage;
+    }
+
+    public int getParseProgress() {
+        return parseProgress;
+    }
+
+    public String getParseStage() {
+        return parseStage;
     }
 
     public OffsetDateTime getCreatedAt() {

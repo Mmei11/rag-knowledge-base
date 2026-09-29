@@ -46,6 +46,8 @@ CREATE TABLE documents (
     file_size BIGINT NOT NULL,
     file_path VARCHAR(500) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    parse_progress INTEGER NOT NULL DEFAULT 0,
+    parse_stage VARCHAR(100) NOT NULL DEFAULT '等待解析',
     error_message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -57,6 +59,7 @@ CREATE TABLE documents (
     CONSTRAINT fk_documents_user
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT,
     CONSTRAINT ck_documents_file_size CHECK (file_size >= 0),
+    CONSTRAINT ck_documents_parse_progress CHECK (parse_progress BETWEEN 0 AND 100),
     CONSTRAINT ck_documents_status
         CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'))
 );

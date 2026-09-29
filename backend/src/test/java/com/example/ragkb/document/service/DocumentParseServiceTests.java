@@ -3,11 +3,11 @@ package com.example.ragkb.document.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.example.ragkb.common.cache.CacheInvalidationService;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.document.chunk.TextChunker;
 import com.example.ragkb.document.dto.DocumentParseResponse;
@@ -63,7 +63,7 @@ class DocumentParseServiceTests {
     private EmbeddingService embeddingService;
 
     @Mock
-    private CacheInvalidationService cacheInvalidationService;
+    private DocumentProgressService documentProgressService;
 
     @Test
     void shouldParseTextDocumentAndMarkCompleted() throws Exception {
@@ -73,7 +73,7 @@ class DocumentParseServiceTests {
         DocumentParseService service = service();
         when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
         when(documentChunkRepository.saveAllAndFlush(anyList())).thenAnswer(invocation -> withIds(invocation.getArgument(0)));
-        when(embeddingService.embedBatch(List.of("Spring Boot notes")))
+        when(embeddingService.embedBatch(anyList(), any()))
                 .thenReturn(List.of(new EmbeddingVector(List.of(0.1, 0.2))));
 
         DocumentParseResponse response = service.parse(currentUser, 100L);
@@ -91,9 +91,10 @@ class DocumentParseServiceTests {
         assertThat(chunksCaptor.getValue()).hasSize(1);
         assertThat(chunksCaptor.getValue().get(0).getChunkIndex()).isZero();
         assertThat(chunksCaptor.getValue().get(0).getContent()).isEqualTo("Spring Boot notes");
-        verify(embeddingService).embedBatch(List.of("Spring Boot notes"));
+        verify(embeddingService).embedBatch(eq(List.of("Spring Boot notes")), any());
         verify(documentChunkEmbeddingRepository).updateEmbeddings(anyList(), anyList());
-        verify(cacheInvalidationService, times(2)).evictDocumentCaches(1L, 10L, 100L);
+        verify(documentProgressService).start(100L);
+        verify(documentProgressService).complete(100L);
     }
 
     @Test
@@ -104,7 +105,7 @@ class DocumentParseServiceTests {
         DocumentParseService service = service();
         when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
         when(documentChunkRepository.saveAllAndFlush(anyList())).thenAnswer(invocation -> withIds(invocation.getArgument(0)));
-        when(embeddingService.embedBatch(List.of("Async process notes")))
+        when(embeddingService.embedBatch(anyList(), any()))
                 .thenReturn(List.of(new EmbeddingVector(List.of(0.1, 0.2))));
 
         DocumentParseResponse response = service.process(100L);
@@ -112,7 +113,8 @@ class DocumentParseServiceTests {
         assertThat(response.status()).isEqualTo(DocumentStatus.COMPLETED);
         assertThat(response.chunkCount()).isEqualTo(1);
         verify(documentChunkRepository).deleteByDocumentId(100L);
-        verify(cacheInvalidationService, times(2)).evictDocumentCaches(1L, 10L, 100L);
+        verify(documentProgressService).start(100L);
+        verify(documentProgressService).complete(100L);
     }
 
     @Test
@@ -127,7 +129,7 @@ class DocumentParseServiceTests {
         DocumentParseService service = service();
         when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
         when(documentChunkRepository.saveAllAndFlush(anyList())).thenAnswer(invocation -> withIds(invocation.getArgument(0)));
-        when(embeddingService.embedBatch(List.of("First page notes", "Second page notes")))
+        when(embeddingService.embedBatch(anyList(), any()))
                 .thenReturn(List.of(
                         new EmbeddingVector(List.of(0.1, 0.2)),
                         new EmbeddingVector(List.of(0.3, 0.4))));
@@ -159,9 +161,7 @@ class DocumentParseServiceTests {
         assertThatThrownBy(() -> service.parse(currentUser, 100L))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("文档内容为空");
-        assertThat(document.getStatus()).isEqualTo(DocumentStatus.FAILED);
-        verify(cacheInvalidationService, times(2)).evictDocumentCaches(1L, 10L, 100L);
-        assertThat(document.getErrorMessage()).isEqualTo("文档内容为空");
+        verify(documentProgressService).fail(100L, "文档内容为空");
     }
 
     @Test
@@ -186,7 +186,7 @@ class DocumentParseServiceTests {
                 parserFactory,
                 new TextChunker(),
                 embeddingService,
-                cacheInvalidationService);
+                documentProgressService);
     }
 
     private List<DocumentChunk> withIds(List<DocumentChunk> chunks) {

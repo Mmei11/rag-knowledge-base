@@ -2,8 +2,10 @@ package com.example.ragkb.rag.service;
 
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
+import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
 import com.example.ragkb.rag.config.RetrievalProperties;
+import com.example.ragkb.rag.dto.RetrievalFilters;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
 import com.example.ragkb.rag.dto.VectorSearchRequest;
 import com.example.ragkb.rag.dto.VectorSearchResponse;
@@ -26,16 +28,19 @@ public class RagRetrievalService {
     private static final int RRF_RANKING_CONSTANT = 60;
 
     private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final DocumentRepository documentRepository;
     private final EmbeddingService embeddingService;
     private final RagRetrievalRepository ragRetrievalRepository;
     private final RetrievalProperties retrievalProperties;
 
     public RagRetrievalService(
             KnowledgeBaseRepository knowledgeBaseRepository,
+            DocumentRepository documentRepository,
             EmbeddingService embeddingService,
             RagRetrievalRepository ragRetrievalRepository,
             RetrievalProperties retrievalProperties) {
         this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.documentRepository = documentRepository;
         this.embeddingService = embeddingService;
         this.ragRetrievalRepository = ragRetrievalRepository;
         this.retrievalProperties = retrievalProperties;
@@ -48,6 +53,9 @@ public class RagRetrievalService {
 
         String question = request.question().trim();
         int topK = request.normalizedTopK();
+        RetrievalFilters filters = new RetrievalFilters(
+                request.normalizedDocumentIds(), request.startDate(), request.endDate());
+        validateSelectedDocuments(currentUser, request.knowledgeBaseId(), filters);
         double similarityThreshold = request.similarityThreshold() == null
                 ? retrievalProperties.getSimilarityThreshold()
                 : request.similarityThreshold();
@@ -60,18 +68,23 @@ public class RagRetrievalService {
                 request.knowledgeBaseId(),
                 queryEmbedding,
                 candidateLimit,
-                similarityThreshold);
+                similarityThreshold,
+                filters);
         List<RetrievedChunkResponse> keywordItems = ragRetrievalRepository.searchKeywordChunks(
                 request.knowledgeBaseId(),
                 queryEmbedding,
                 SearchKeywordExtractor.extract(question),
-                candidateLimit);
+                candidateLimit,
+                filters);
         List<RetrievedChunkResponse> items = fuseResults(vectorItems, keywordItems, topK, similarityThreshold);
-        log.info("hybrid search completed, userId={}, knowledgeBaseId={}, topK={}, threshold={}, vectorResultCount={}, keywordResultCount={}, resultCount={}, embeddingMs={}, searchMs={}",
+        log.info("hybrid search completed, userId={}, knowledgeBaseId={}, topK={}, threshold={}, documentFilterCount={}, startDate={}, endDate={}, vectorResultCount={}, keywordResultCount={}, resultCount={}, embeddingMs={}, searchMs={}",
                 currentUser.id(),
                 request.knowledgeBaseId(),
                 topK,
                 similarityThreshold,
+                filters.documentIds().size(),
+                filters.startDate(),
+                filters.endDate(),
                 vectorItems.size(),
                 keywordItems.size(),
                 items.size(),
@@ -83,6 +96,21 @@ public class RagRetrievalService {
 
     private long elapsedMs(long startedAt) {
         return (System.nanoTime() - startedAt) / 1_000_000;
+    }
+
+    private void validateSelectedDocuments(
+            CurrentUser currentUser,
+            Long knowledgeBaseId,
+            RetrievalFilters filters) {
+        if (!filters.hasDocumentIds()) {
+            return;
+        }
+
+        long matchedDocumentCount = documentRepository.countByIdInAndKnowledgeBaseIdAndUserId(
+                filters.documentIds(), knowledgeBaseId, currentUser.id());
+        if (matchedDocumentCount != filters.documentIds().size()) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "筛选文档不存在或不属于当前知识库");
+        }
     }
 
     private List<RetrievedChunkResponse> fuseResults(

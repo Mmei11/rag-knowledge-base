@@ -99,9 +99,29 @@ export function DocumentPanel({
   }, [knowledgeBaseId])
 
   const refreshProcessingStatuses = useCallback(async (documentIds: number[]) => {
-    const statuses = await Promise.all(documentIds.map(documentApi.getStatus))
+    const statusResults = await Promise.all(
+      documentIds.map(async (documentId) => {
+        try {
+          return await documentApi.getStatus(documentId)
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 404) {
+            return { id: documentId, missing: true } as const
+          }
+          throw err
+        }
+      }),
+    )
+    const missingDocumentIds = new Set(
+      statusResults
+        .filter((result): result is { id: number; missing: true } => 'missing' in result)
+        .map((result) => result.id),
+    )
+    const statuses = statusResults.filter(
+      (result): result is Exclude<(typeof statusResults)[number], { missing: true }> =>
+        !('missing' in result),
+    )
     setDocuments((current) =>
-      current.map((document) => {
+      current.filter((document) => !missingDocumentIds.has(document.id)).map((document) => {
         const latest = statuses.find((status) => status.id === document.id)
         if (!latest) {
           return document
@@ -110,6 +130,8 @@ export function DocumentPanel({
         return {
           ...document,
           status: latest.status,
+          parseProgress: latest.parseProgress,
+          parseStage: latest.parseStage,
           errorMessage: latest.errorMessage,
           updatedAt: latest.updatedAt,
         }
@@ -128,10 +150,22 @@ export function DocumentPanel({
 
     const timer = window.setInterval(() => {
       void refreshProcessingStatuses(processingDocumentIds)
-    }, 3000)
+    }, 1000)
 
     return () => window.clearInterval(timer)
   }, [processingDocumentIds, refreshProcessingStatuses])
+
+  useEffect(() => {
+    const shouldDismissUploadedNotice =
+      message === '文档已上传，正在解析' && processingDocumentIds.length === 0
+    const shouldDismissDeletedNotice = message === '文档已删除'
+    if (!shouldDismissUploadedNotice && !shouldDismissDeletedNotice) {
+      return
+    }
+
+    const timer = window.setTimeout(() => setMessage(''), 3000)
+    return () => window.clearTimeout(timer)
+  }, [message, processingDocumentIds.length])
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -227,9 +261,30 @@ export function DocumentPanel({
                 )}
               </div>
               <span className={`document-status ${document.status.toLowerCase()}`}>
-                {statusText(document.status)}
+                {isProcessing(document.status)
+                  ? `${statusText(document.status)} · ${document.parseProgress}%`
+                  : statusText(document.status)}
               </span>
             </div>
+
+            {isProcessing(document.status) && (
+              <div className="document-parse-progress">
+                <div className="document-parse-progress-label">
+                  <span>{document.parseStage ?? statusText(document.status)}</span>
+                  <strong>{document.parseProgress}%</strong>
+                </div>
+                <div
+                  aria-label={`${document.fileName} 解析进度`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={document.parseProgress}
+                  className="document-parse-progress-track"
+                  role="progressbar"
+                >
+                  <span style={{ width: `${Math.max(document.parseProgress, 2)}%` }} />
+                </div>
+              </div>
+            )}
 
             <div className="document-actions">
               {!isProcessing(document.status) && (

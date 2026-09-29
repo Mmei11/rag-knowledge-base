@@ -1,5 +1,6 @@
 package com.example.ragkb.config;
 
+import com.example.ragkb.rag.config.QwenProperties;
 import java.util.concurrent.Executor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,19 @@ public class AsyncConfig {
         executor.setMaxPoolSize(4);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("document-task-");
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean(name = "embeddingRequestExecutor")
+    public Executor embeddingRequestExecutor(QwenProperties qwenProperties) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        int concurrency = qwenProperties.getEmbeddingConcurrency();
+        executor.setCorePoolSize(concurrency);
+        executor.setMaxPoolSize(concurrency);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("embedding-request-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.initialize();
         return executor;
     }

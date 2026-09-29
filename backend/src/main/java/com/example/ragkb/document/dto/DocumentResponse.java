@@ -12,6 +12,8 @@ public record DocumentResponse(
         String fileType,
         long fileSize,
         DocumentStatus status,
+        int parseProgress,
+        String parseStage,
         String errorMessage,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
@@ -25,6 +27,8 @@ public record DocumentResponse(
                 document.getFileType(),
                 document.getFileSize(),
                 document.getStatus(),
+                document.getParseProgress(),
+                document.getParseStage(),
                 document.getErrorMessage(),
                 document.getCreatedAt(),
                 document.getUpdatedAt());

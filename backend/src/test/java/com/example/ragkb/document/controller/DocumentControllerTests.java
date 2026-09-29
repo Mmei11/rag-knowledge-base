@@ -127,13 +127,14 @@ class DocumentControllerTests {
     void shouldGetDocumentStatus() throws Exception {
         OffsetDateTime now = OffsetDateTime.parse("2026-08-18T20:00:00+08:00");
         when(documentService.getStatus(currentUser, 100L))
-                .thenReturn(new DocumentStatusResponse(100L, DocumentStatus.PENDING, null, now));
+                .thenReturn(new DocumentStatusResponse(100L, DocumentStatus.PENDING, 0, "等待解析", null, now));
 
         mockMvc.perform(get("/api/documents/100/status")
                         .with(authentication(currentUserAuthentication())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(100))
-                .andExpect(jsonPath("$.data.status").value("PENDING"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.parseProgress").value(0));
     }
 
     @Test
@@ -169,7 +170,7 @@ class DocumentControllerTests {
     void shouldReprocessDocument() throws Exception {
         OffsetDateTime now = OffsetDateTime.parse("2026-08-18T20:00:00+08:00");
         when(documentService.reprocess(currentUser, 100L))
-                .thenReturn(new DocumentStatusResponse(100L, DocumentStatus.PENDING, null, now));
+                .thenReturn(new DocumentStatusResponse(100L, DocumentStatus.PENDING, 0, "等待解析", null, now));
 
         mockMvc.perform(post("/api/documents/100/reprocess")
                         .with(authentication(currentUserAuthentication())))
@@ -197,6 +198,8 @@ class DocumentControllerTests {
                 "txt",
                 17L,
                 DocumentStatus.PENDING,
+                0,
+                "等待解析",
                 null,
                 now,
                 now);

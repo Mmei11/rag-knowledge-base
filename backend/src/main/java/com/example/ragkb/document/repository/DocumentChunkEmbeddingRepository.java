@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class DocumentChunkEmbeddingRepository {
@@ -30,6 +31,7 @@ public class DocumentChunkEmbeddingRepository {
         this.properties = properties;
     }
 
+    @Transactional
     public void updateEmbeddings(List<DocumentChunk> chunks, List<EmbeddingVector> embeddings) {
         if (chunks.size() != embeddings.size()) {
             throw new IllegalArgumentException("chunks and embeddings size must match");

@@ -33,4 +33,22 @@ class QwenPropertiesTests {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Qwen embedding batch size must be positive");
     }
+
+    @Test
+    void shouldUseQwen37EmbeddingDefaults() {
+        QwenProperties properties = new QwenProperties();
+
+        assertThat(properties.getEmbeddingModel()).isEqualTo("qwen3.7-text-embedding-flash");
+        assertThat(properties.getEmbeddingBatchSize()).isEqualTo(20);
+        assertThat(properties.getEmbeddingConcurrency()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldRejectInvalidEmbeddingConcurrency() {
+        QwenProperties properties = new QwenProperties();
+
+        assertThatThrownBy(() -> properties.setEmbeddingConcurrency(0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Qwen embedding concurrency must be between 1 and 8");
+    }
 }
