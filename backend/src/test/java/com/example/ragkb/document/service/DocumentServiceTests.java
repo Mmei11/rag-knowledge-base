@@ -107,7 +107,17 @@ class DocumentServiceTests {
 
         assertThatThrownBy(() -> service.upload(currentUser, 10L, file))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("仅支持 PDF、TXT、Markdown 文件");
+                .hasMessage("仅支持 PDF、TXT、Markdown、Word、Excel 文件");
+    }
+
+    @Test
+    void shouldAcceptWordAndExcelExtensions() {
+        DocumentStorageProperties properties = properties();
+
+        assertThat(properties.getAllowedExtensions()).contains("docx", "xlsx");
+        assertThat(properties.getAllowedContentTypes()).contains(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
 
     @Test

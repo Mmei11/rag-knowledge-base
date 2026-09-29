@@ -6,7 +6,7 @@ import { StatusMessage } from './StatusMessage'
 import type { DocumentResponse, DocumentStatus } from '../types/api'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ALLOWED_EXTENSIONS = ['pdf', 'txt', 'md', 'markdown']
+const ALLOWED_EXTENSIONS = ['pdf', 'txt', 'md', 'markdown', 'docx', 'xlsx']
 
 type DocumentPanelProps = {
   knowledgeBaseId: number
@@ -50,7 +50,7 @@ function validateFile(file: File | null) {
 
   const extension = extensionOf(file.name)
   if (!ALLOWED_EXTENSIONS.includes(extension)) {
-    return '仅支持 PDF、TXT、Markdown 文件'
+    return '仅支持 PDF、TXT、Markdown、Word、Excel 文件'
   }
 
   if (file.size > MAX_FILE_SIZE) {
@@ -227,7 +227,7 @@ export function DocumentPanel({
         <label>
           上传文档
           <input
-            accept=".pdf,.txt,.md,.markdown"
+            accept=".pdf,.txt,.md,.markdown,.docx,.xlsx"
             className="file-input"
             onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
             type="file"

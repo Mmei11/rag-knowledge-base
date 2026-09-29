@@ -36,6 +36,9 @@ services:
   backend:
     build:
       context: ./backend
+      args:
+        MAVEN_PROXY_HOST: ${MAVEN_PROXY_HOST-host.docker.internal}
+        MAVEN_PROXY_PORT: ${MAVEN_PROXY_PORT:-12450}
     container_name: rag-kb-backend
     restart: unless-stopped
     depends_on:

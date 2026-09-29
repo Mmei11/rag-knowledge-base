@@ -2,6 +2,7 @@ target
 storage
 .mvn/*
 !.mvn/settings.xml
+!.mvn/docker-proxy-settings.xml
 mvnw
 mvnw.cmd
 *.log

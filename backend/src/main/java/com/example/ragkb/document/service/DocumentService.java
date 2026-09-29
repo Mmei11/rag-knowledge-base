@@ -143,7 +143,7 @@ public class DocumentService {
 
         String extension = extensionOf(originalFileName);
         if (!properties.getAllowedExtensions().contains(extension)) {
-            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "仅支持 PDF、TXT、Markdown 文件");
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "仅支持 PDF、TXT、Markdown、Word、Excel 文件");
         }
 
         String contentType = file.getContentType();

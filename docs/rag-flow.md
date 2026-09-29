@@ -10,7 +10,7 @@ flowchart TD
     SaveFile --> CreateDocument[创建 document 记录: PENDING]
     CreateDocument --> AsyncTask[提交异步处理任务]
     AsyncTask --> Processing[状态改为 PROCESSING]
-    Processing --> Parse[解析 PDF/TXT/Markdown]
+    Processing --> Parse[解析 PDF/TXT/Markdown/Word/Excel]
     Parse --> Chunk[TextChunker 切分文本]
     Chunk --> Embed[EmbeddingService 生成向量]
     Embed --> SaveChunks[保存 document_chunks]

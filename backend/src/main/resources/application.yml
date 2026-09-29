@@ -43,11 +43,15 @@ app:
       - txt
       - md
       - markdown
+      - docx
+      - xlsx
     allowed-content-types:
       - application/pdf
       - text/plain
       - text/markdown
       - text/x-markdown
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
       - application/octet-stream
   embedding:
     provider: ${EMBEDDING_PROVIDER:mock}

@@ -13,13 +13,16 @@ public class DocumentStorageProperties {
 
     private long maxSizeBytes = 10 * 1024 * 1024;
 
-    private List<String> allowedExtensions = new ArrayList<>(List.of("pdf", "txt", "md", "markdown"));
+    private List<String> allowedExtensions = new ArrayList<>(List.of(
+            "pdf", "txt", "md", "markdown", "docx", "xlsx"));
 
     private List<String> allowedContentTypes = new ArrayList<>(List.of(
             "application/pdf",
             "text/plain",
             "text/markdown",
             "text/x-markdown",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/octet-stream"));
 
     public String getStorageDir() {

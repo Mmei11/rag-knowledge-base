@@ -9,7 +9,7 @@
 JWT 鉴权
 知识库 CRUD
 文档上传、查询、删除
-PDF/TXT/Markdown 文档解析
+PDF/TXT/Markdown/Word/Excel 文档解析
 文本切分与重叠窗口
 异步文档处理
 Embedding 抽象与 mock/OpenAI/Qwen 实现
@@ -39,6 +39,7 @@ Spring AOP
 Spring Boot Actuator    //负责应用监控和健康检查
 PostgreSQL Driver   //数据库驱动
 Apache PDFBox
+Apache POI
 JUnit 5    //单元测试框架
 Mockito    //mock工具，模拟依赖对象
 MockMvc    //接口测试工具

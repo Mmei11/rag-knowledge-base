@@ -1,0 +1,22 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+    <mirrors>
+        <mirror>
+            <id>aliyunmaven</id>
+            <mirrorOf>central</mirrorOf>
+            <name>Aliyun Maven Central Mirror</name>
+            <url>https://maven.aliyun.com/repository/central</url>
+        </mirror>
+    </mirrors>
+    <proxies>
+        <proxy>
+            <id>docker-host-proxy</id>
+            <active>true</active>
+            <protocol>http</protocol>
+            <host>__MAVEN_PROXY_HOST__</host>
+            <port>__MAVEN_PROXY_PORT__</port>
+            <nonProxyHosts>localhost|127.*|postgres|redis|*.local|host.docker.internal</nonProxyHosts>
+        </proxy>
+    </proxies>
+</settings>
