@@ -26,6 +26,7 @@ import com.example.ragkb.rag.service.RagRetrievalService;
 import com.example.ragkb.security.CurrentUser;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,6 +161,89 @@ public class ChatService {
                 ChatMessageResponse.from(userMessage),
                 ChatMessageResponse.from(assistantMessage, references),
                 references);
+    }
+
+    @Transactional
+    public ChatStreamPreparation prepareStreamingMessage(
+            CurrentUser currentUser,
+            Long sessionId,
+            SendChatMessageRequest request) {
+        ChatSession session = findSession(currentUser, sessionId);
+        rateLimitService.checkChatLimit(currentUser.id());
+        String question = request.question().trim();
+
+        ChatMessage userMessage = chatMessageRepository.saveAndFlush(new ChatMessage(
+                session.getId(),
+                currentUser.id(),
+                ChatRole.USER,
+                question));
+
+        VectorSearchResponse searchResponse = ragRetrievalService.search(
+                currentUser,
+                new VectorSearchRequest(
+                        session.getKnowledgeBaseId(),
+                        question,
+                        request.normalizedTopK(),
+                        request.similarityThreshold(),
+                        request.normalizedDocumentIds(),
+                        request.startDate(),
+                        request.endDate()));
+        List<RetrievedChunkResponse> retrievedChunks = searchResponse.items();
+        String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode());
+
+        return new ChatStreamPreparation(
+                session.getId(),
+                currentUser.id(),
+                prompt,
+                retrievedChunks,
+                ChatMessageResponse.from(userMessage),
+                retrievedChunks.stream().map(ChatReferenceResponse::from).toList());
+    }
+
+    public String generateStreamingAnswer(
+            ChatStreamPreparation preparation,
+            Consumer<String> onDelta) {
+        StringBuilder answer = new StringBuilder();
+        long modelStartedAt = System.nanoTime();
+        chatModelService.generateStream(preparation.prompt(), delta -> {
+            if (delta == null || delta.isEmpty()) {
+                return;
+            }
+            answer.append(delta);
+            onDelta.accept(delta);
+        });
+        if (answer.isEmpty()) {
+            throw new IllegalStateException("模型没有返回回答内容");
+        }
+        log.info("chat model stream completed, userId={}, sessionId={}, promptLength={}, referenceCount={}, durationMs={}",
+                preparation.userId(),
+                preparation.sessionId(),
+                preparation.prompt().length(),
+                preparation.retrievedChunks().size(),
+                elapsedMs(modelStartedAt));
+        return answer.toString();
+    }
+
+    @Transactional
+    public ChatAnswerResponse completeStreamingMessage(
+            ChatStreamPreparation preparation,
+            String answer) {
+        ChatSession session = chatSessionRepository
+                .findByIdAndUserId(preparation.sessionId(), preparation.userId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Chat session not found"));
+        ChatMessage assistantMessage = chatMessageRepository.saveAndFlush(new ChatMessage(
+                session.getId(),
+                preparation.userId(),
+                ChatRole.ASSISTANT,
+                answer));
+        saveReferences(assistantMessage.getId(), preparation.retrievedChunks());
+        session.touch();
+
+        return new ChatAnswerResponse(
+                session.getId(),
+                preparation.userMessage(),
+                ChatMessageResponse.from(assistantMessage, preparation.references()),
+                preparation.references());
     }
 
     private ChatSession findSession(CurrentUser currentUser, Long sessionId) {

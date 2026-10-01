@@ -15,6 +15,7 @@ import com.example.ragkb.chat.dto.ChatReferenceResponse;
 import com.example.ragkb.chat.dto.ChatSessionResponse;
 import com.example.ragkb.chat.entity.ChatRole;
 import com.example.ragkb.chat.service.ChatService;
+import com.example.ragkb.chat.service.ChatStreamingService;
 import com.example.ragkb.common.exception.GlobalExceptionHandler;
 import com.example.ragkb.config.CorsConfig;
 import com.example.ragkb.config.SecurityConfig;
@@ -47,6 +48,9 @@ class ChatControllerTests {
 
     @MockitoBean
     private ChatService chatService;
+
+    @MockitoBean
+    private ChatStreamingService chatStreamingService;
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;

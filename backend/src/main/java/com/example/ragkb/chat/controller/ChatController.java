@@ -6,26 +6,31 @@ import com.example.ragkb.chat.dto.ChatSessionResponse;
 import com.example.ragkb.chat.dto.CreateChatSessionRequest;
 import com.example.ragkb.chat.dto.SendChatMessageRequest;
 import com.example.ragkb.chat.service.ChatService;
+import com.example.ragkb.chat.service.ChatStreamingService;
 import com.example.ragkb.common.api.ApiResponse;
 import com.example.ragkb.security.CurrentUser;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatStreamingService chatStreamingService;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, ChatStreamingService chatStreamingService) {
         this.chatService = chatService;
+        this.chatStreamingService = chatStreamingService;
     }
 
     @PostMapping("/sessions")
@@ -53,6 +58,14 @@ public class ChatController {
             @PathVariable Long sessionId,
             @Valid @RequestBody SendChatMessageRequest request) {
         return ApiResponse.success(chatService.sendMessage(currentUser(authentication), sessionId, request));
+    }
+
+    @PostMapping(value = "/sessions/{sessionId}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamMessage(
+            Authentication authentication,
+            @PathVariable Long sessionId,
+            @Valid @RequestBody SendChatMessageRequest request) {
+        return chatStreamingService.streamMessage(currentUser(authentication), sessionId, request);
     }
 
     private CurrentUser currentUser(Authentication authentication) {

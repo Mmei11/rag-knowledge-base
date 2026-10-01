@@ -3,6 +3,8 @@ package com.example.ragkb.chat.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +36,7 @@ import com.example.ragkb.user.entity.UserRole;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -174,6 +177,51 @@ class ChatServiceTests {
                 new SendChatMessageRequest("What is DI?", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Chat session not found");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldGenerateAndPersistStreamingAnswerAfterCompletion() {
+        ChatService service = service();
+        ChatSession session = session();
+        RetrievedChunkResponse chunk = new RetrievedChunkResponse(
+                200L,
+                300L,
+                0,
+                "Spring Boot supports dependency injection.",
+                0.91);
+        when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(session));
+        when(chatMessageRepository.saveAndFlush(any(ChatMessage.class))).thenAnswer(invocation -> {
+            ChatMessage message = invocation.getArgument(0);
+            Long id = message.getRole() == ChatRole.USER ? 500L : 501L;
+            fillMessage(message, id);
+            return message;
+        });
+        when(ragRetrievalService.search(any(CurrentUser.class), any(VectorSearchRequest.class)))
+                .thenReturn(new VectorSearchResponse(10L, "What is DI?", 5, List.of(chunk)));
+        when(promptBuilder.build("What is DI?", List.of(chunk), PromptMode.KB_FIRST)).thenReturn("prompt");
+        doAnswer(invocation -> {
+            Consumer<String> onDelta = invocation.getArgument(1);
+            onDelta.accept("DI ");
+            onDelta.accept("is dependency injection.");
+            return null;
+        }).when(chatModelService).generateStream(eq("prompt"), any(Consumer.class));
+
+        ChatStreamPreparation preparation = service.prepareStreamingMessage(
+                currentUser,
+                100L,
+                new SendChatMessageRequest(" What is DI? ", null));
+        String answer = service.generateStreamingAnswer(preparation, ignored -> {
+        });
+        ChatAnswerResponse response = service.completeStreamingMessage(preparation, answer);
+
+        assertThat(preparation.userMessage().content()).isEqualTo("What is DI?");
+        assertThat(answer).isEqualTo("DI is dependency injection.");
+        assertThat(response.assistantMessage().content()).isEqualTo(answer);
+        assertThat(response.references()).singleElement()
+                .satisfies(reference -> assertThat(reference.chunkId()).isEqualTo(200L));
+        verify(messageReferenceRepository).saveAll(any());
+        verify(rateLimitService).checkChatLimit(1L);
     }
 
     @Test

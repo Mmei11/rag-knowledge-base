@@ -61,4 +61,24 @@ class QwenChatModelServiceTests {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Qwen response does not contain message content");
     }
+
+    @Test
+    void shouldExtractStreamDeltaContent() throws Exception {
+        String json = """
+                {
+                  "choices": [
+                    {
+                      "delta": {
+                        "content": "stream answer"
+                      }
+                    }
+                  ]
+                }
+                """;
+
+        assertThat(QwenChatModelService.extractStreamContent(objectMapper.readTree(json)))
+                .isEqualTo("stream answer");
+        assertThat(QwenChatModelService.extractStreamContent(objectMapper.readTree("{\"choices\":[{}]}")))
+                .isEmpty();
+    }
 }

@@ -58,4 +58,19 @@ class OpenAiChatModelServiceTests {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("OpenAI response does not contain output text");
     }
+
+    @Test
+    void shouldExtractStreamDeltaContent() throws Exception {
+        String json = """
+                {
+                  "type": "response.output_text.delta",
+                  "delta": "stream answer"
+                }
+                """;
+
+        assertThat(OpenAiChatModelService.extractStreamContent(objectMapper.readTree(json)))
+                .isEqualTo("stream answer");
+        assertThat(OpenAiChatModelService.extractStreamContent(objectMapper.readTree("{\"type\":\"response.completed\"}")))
+                .isEmpty();
+    }
 }

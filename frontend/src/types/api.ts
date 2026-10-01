@@ -134,3 +134,11 @@ export type ChatAnswerResponse = {
   assistantMessage: ChatMessageResponse
   references: ChatReferenceResponse[]
 }
+
+export type ChatStreamDeltaResponse = {
+  content: string
+}
+
+export type ChatStreamErrorResponse = {
+  message: string
+}

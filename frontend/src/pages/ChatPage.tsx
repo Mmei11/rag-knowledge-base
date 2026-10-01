@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { ApiError, chatApi, documentApi, knowledgeBaseApi } from '../api/http'
 import { StatusMessage } from '../components/StatusMessage'
 import type {
@@ -21,6 +23,12 @@ const PROMPT_MODE_OPTIONS: Array<{ label: string; value: PromptMode }> = [
   { label: '通用问答', value: 'GENERAL' },
   { label: '学习讲解', value: 'LEARNING' },
 ]
+
+type StreamingAnswer = {
+  content: string
+  createdAt: string
+  state: 'STREAMING' | 'STOPPED' | 'FAILED'
+}
 
 function validateQuestion(question: string) {
   const text = question.trim()
@@ -97,14 +105,27 @@ function highlightedContent(content: string, question: string): ReactNode {
   })
 }
 
+function MarkdownContent({ content, streaming = false }: { content: string; streaming?: boolean }) {
+  return (
+    <div className="message-markdown">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>
+        {content}
+      </ReactMarkdown>
+      {streaming && <span aria-hidden="true" className="stream-cursor" />}
+    </div>
+  )
+}
+
 export function ChatPage() {
   const messageListRef = useRef<HTMLDivElement | null>(null)
   const documentFilterRef = useRef<HTMLDivElement | null>(null)
+  const streamAbortControllerRef = useRef<AbortController | null>(null)
 
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseResponse[]>([])
   const [documents, setDocuments] = useState<DocumentResponse[]>([])
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [messages, setMessages] = useState<ChatMessageResponse[]>([])
+  const [streamingAnswer, setStreamingAnswer] = useState<StreamingAnswer | null>(null)
 
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<number | null>(null)
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
@@ -248,6 +269,8 @@ export function ChatPage() {
     }
   }, [documentFilterOpen])
 
+  useEffect(() => () => streamAbortControllerRef.current?.abort(), [])
+
   useEffect(() => {
     if (!selectedSessionId) {
       setMessages([])
@@ -273,7 +296,7 @@ export function ChatPage() {
     }
 
     messageList.scrollTop = messageList.scrollHeight
-  }, [messages, answering, selectedSessionId])
+  }, [messages, answering, selectedSessionId, streamingAnswer?.content])
 
   async function handleCreateSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -329,33 +352,79 @@ export function ChatPage() {
     setAnswering(true)
     setError('')
     setMessage('')
+    setActiveReference(null)
+    setActiveReferenceQuestion('')
+    setReferenceExpanded(false)
+
+    const normalizedQuestion = question.trim()
+    const controller = new AbortController()
+    streamAbortControllerRef.current = controller
+    setQuestion('')
+    setStreamingAnswer({
+      content: '',
+      createdAt: new Date().toISOString(),
+      state: 'STREAMING',
+    })
 
     try {
-      const normalizedQuestion = question.trim()
-      const answer = await chatApi.sendMessage(selectedSessionId, {
-        question: normalizedQuestion,
-        topK,
-        similarityThreshold,
-        documentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        promptMode,
-      })
-      setMessages((current) => [
-        ...current,
-        answer.userMessage,
-        answer.assistantMessage,
-      ])
-      setQuestion('')
-      setActiveReference(answer.references[0] ?? null)
-      setActiveReferenceQuestion(answer.references[0] ? normalizedQuestion : '')
-      setReferenceExpanded(false)
-      await loadSessions()
+      await chatApi.streamMessage(
+        selectedSessionId,
+        {
+          question: normalizedQuestion,
+          topK,
+          similarityThreshold,
+          documentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          promptMode,
+        },
+        {
+          onUserMessage: (userMessage) => {
+            setMessages((current) => [...current, userMessage])
+          },
+          onDelta: (content) => {
+            setStreamingAnswer((current) =>
+              current
+                ? { ...current, content: current.content + content }
+                : {
+                    content,
+                    createdAt: new Date().toISOString(),
+                    state: 'STREAMING',
+                  },
+            )
+          },
+          onComplete: (answer) => {
+            setMessages((current) => [...current, answer.assistantMessage])
+            setStreamingAnswer(null)
+            setActiveReference(answer.references[0] ?? null)
+            setActiveReferenceQuestion(answer.references[0] ? normalizedQuestion : '')
+            void loadSessions()
+          },
+        },
+        controller.signal,
+      )
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : '操作失败')
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setStreamingAnswer((current) =>
+          current ? { ...current, state: 'STOPPED' } : current,
+        )
+        setMessage('已停止生成，未完成回答不会保存到会话中')
+      } else {
+        setStreamingAnswer((current) =>
+          current ? { ...current, state: 'FAILED' } : current,
+        )
+        setError(err instanceof ApiError ? err.message : '生成回答失败，请稍后重试')
+      }
     } finally {
+      if (streamAbortControllerRef.current === controller) {
+        streamAbortControllerRef.current = null
+      }
       setAnswering(false)
     }
+  }
+
+  function handleStopGenerating() {
+    streamAbortControllerRef.current?.abort()
   }
 
   function toggleDocumentSelection(documentId: number) {
@@ -403,7 +472,7 @@ export function ChatPage() {
             />
           </label>
 
-          <button className="primary-button" disabled={loading} type="submit">
+          <button className="primary-button" disabled={loading || answering} type="submit">
             新建会话
           </button>
         </form>
@@ -418,6 +487,7 @@ export function ChatPage() {
               }
               key={session.id}
               onClick={() => setSelectedSessionId(session.id)}
+              disabled={answering}
               type="button"
             >
               <span>{session.title}</span>
@@ -449,7 +519,7 @@ export function ChatPage() {
               key={chatMessage.id}
             >
               <div className="message-bubble">
-                <p>{chatMessage.content}</p>
+                <MarkdownContent content={chatMessage.content} />
                 <small>{formatDateTime(chatMessage.createdAt)}</small>
               </div>
 
@@ -479,10 +549,27 @@ export function ChatPage() {
             </article>
           ))}
 
-          {answering && (
-            <article className="message-item assistant">
+          {streamingAnswer && (
+            <article className={`message-item assistant streaming-answer ${streamingAnswer.state.toLowerCase()}`}>
               <div className="message-bubble pending-answer">
-                <p>正在根据知识库生成回答...</p>
+                <MarkdownContent
+                  content={
+                    streamingAnswer.content ||
+                    (streamingAnswer.state === 'STREAMING'
+                      ? '正在检索资料并生成回答...'
+                      : streamingAnswer.state === 'STOPPED'
+                        ? '回答已停止生成。'
+                        : '回答生成失败。')
+                  }
+                  streaming={streamingAnswer.state === 'STREAMING'}
+                />
+                <small>
+                  {streamingAnswer.state === 'STREAMING'
+                    ? '正在生成'
+                    : streamingAnswer.state === 'STOPPED'
+                      ? '未完成回答不会保存'
+                      : '请修改问题后重试'}
+                </small>
               </div>
             </article>
           )}
@@ -612,15 +699,18 @@ export function ChatPage() {
               maxLength={1000}
               onChange={(event) => setQuestion(event.target.value)}
               placeholder="输入一个关于当前知识库的问题"
+              disabled={answering}
               value={question}
             />
-            <button
-              className="primary-button"
-              disabled={answering || !selectedSessionId}
-              type="submit"
-            >
-              发送
-            </button>
+            {answering ? (
+              <button className="stop-generating-button" onClick={handleStopGenerating} type="button">
+                停止生成
+              </button>
+            ) : (
+              <button className="primary-button" disabled={!selectedSessionId} type="submit">
+                发送
+              </button>
+            )}
           </div>
         </form>
       </section>

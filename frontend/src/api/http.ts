@@ -4,6 +4,8 @@ import type {
   ChatAnswerResponse,
   ChatMessageResponse,
   ChatSessionResponse,
+  ChatStreamDeltaResponse,
+  ChatStreamErrorResponse,
   CreateChatSessionRequest,
   CreateKnowledgeBaseRequest,
   DocumentResponse,
@@ -58,6 +60,17 @@ type RequestOptions = {
   body?: unknown
   auth?: boolean
   onUploadProgress?: (percent: number) => void
+}
+
+type ChatStreamHandlers = {
+  onUserMessage: (message: ChatMessageResponse) => void
+  onDelta: (content: string) => void
+  onComplete: (answer: ChatAnswerResponse) => void
+}
+
+type SseFrame = {
+  eventName: string
+  data: string
 }
 
 async function apiRequest<T>(
@@ -118,6 +131,152 @@ async function apiRequest<T>(
     }
 
     throw new ApiError('操作失败', 0)
+  }
+}
+
+function parseSseFrame(frame: string): SseFrame | null {
+  const data: string[] = []
+  let eventName = 'message'
+
+  for (const line of frame.split(/\r?\n/)) {
+    if (line.startsWith('event:')) {
+      eventName = line.slice('event:'.length).trim()
+    }
+    if (line.startsWith('data:')) {
+      data.push(line.slice('data:'.length).replace(/^ /, ''))
+    }
+  }
+
+  return data.length > 0 ? { eventName, data: data.join('\n') } : null
+}
+
+async function streamRequestError(response: Response) {
+  let payload: ApiResponse<unknown> | undefined
+  try {
+    payload = (await response.json()) as ApiResponse<unknown>
+  } catch {
+    // 非 JSON 的网关错误使用状态文本作为降级提示。
+  }
+
+  if (response.status === 401 || payload?.code === 40100) {
+    unauthorizedHandler?.()
+  }
+  return new ApiError(
+    payload?.message || response.statusText || '请求失败',
+    response.status,
+    payload?.code,
+    payload?.data,
+  )
+}
+
+function handleStreamFrame(frame: SseFrame, handlers: ChatStreamHandlers) {
+  if (frame.eventName === 'user') {
+    handlers.onUserMessage(JSON.parse(frame.data) as ChatMessageResponse)
+    return null
+  }
+  if (frame.eventName === 'delta') {
+    const delta = JSON.parse(frame.data) as ChatStreamDeltaResponse
+    handlers.onDelta(delta.content)
+    return null
+  }
+  if (frame.eventName === 'complete') {
+    handlers.onComplete(JSON.parse(frame.data) as ChatAnswerResponse)
+    return null
+  }
+  if (frame.eventName === 'error') {
+    const error = JSON.parse(frame.data) as ChatStreamErrorResponse
+    return new ApiError(error.message || '生成回答失败，请稍后重试', 0)
+  }
+  return null
+}
+
+async function streamChatMessage(
+  sessionId: number,
+  request: SendChatMessageRequest,
+  handlers: ChatStreamHandlers,
+  signal: AbortSignal,
+) {
+  const token = accessTokenGetter?.()
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/api/chat/sessions/${sessionId}/messages/stream`, {
+      method: 'POST',
+      headers: {
+        Accept: 'text/event-stream',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(request),
+      signal,
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw err
+    }
+    throw new ApiError('网络连接失败，请检查后端服务是否启动', 0)
+  }
+
+  if (!response.ok) {
+    throw await streamRequestError(response)
+  }
+  if (!response.body) {
+    throw new ApiError('浏览器不支持流式回答', 0)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let completed = false
+  let streamError: ApiError | null = null
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
+      }
+      buffer += decoder.decode(value, { stream: true })
+      const frames = buffer.split(/\r?\n\r?\n/)
+      buffer = frames.pop() ?? ''
+      for (const rawFrame of frames) {
+        const frame = parseSseFrame(rawFrame)
+        if (!frame) {
+          continue
+        }
+        const error = handleStreamFrame(frame, handlers)
+        if (error) {
+          streamError = error
+          break
+        }
+        if (frame.eventName === 'complete') {
+          completed = true
+        }
+      }
+      if (streamError || completed) {
+        break
+      }
+    }
+
+    buffer += decoder.decode()
+    if (!streamError && !completed && buffer) {
+      const frame = parseSseFrame(buffer)
+      if (frame) {
+        streamError = handleStreamFrame(frame, handlers)
+        completed = frame.eventName === 'complete'
+      }
+    }
+  } finally {
+    if (streamError || completed) {
+      await reader.cancel()
+    }
+    reader.releaseLock()
+  }
+
+  if (streamError) {
+    throw streamError
+  }
+  if (!completed) {
+    throw new ApiError('回答流意外中断，请重试', 0)
   }
 }
 
@@ -236,5 +395,14 @@ export const chatApi = {
         body: request,
       },
     )
+  },
+
+  streamMessage(
+    sessionId: number,
+    request: SendChatMessageRequest,
+    handlers: ChatStreamHandlers,
+    signal: AbortSignal,
+  ) {
+    return streamChatMessage(sessionId, request, handlers, signal)
   },
 }
