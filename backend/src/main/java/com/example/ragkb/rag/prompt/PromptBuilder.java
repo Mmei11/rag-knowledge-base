@@ -1,5 +1,7 @@
 package com.example.ragkb.rag.prompt;
 
+import com.example.ragkb.chat.entity.ChatMessage;
+import com.example.ragkb.chat.entity.ChatRole;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
 import java.util.List;
 import java.util.Locale;
@@ -13,6 +15,11 @@ public class PromptBuilder {
     }
 
     public String build(String question, List<RetrievedChunkResponse> chunks, PromptMode promptMode) {
+        return build(question, chunks, promptMode, List.of());
+    }
+
+    public String build(String question, List<RetrievedChunkResponse> chunks, PromptMode promptMode,
+            List<ChatMessage> history) {
         String normalizedQuestion = normalizeQuestion(question);
         List<RetrievedChunkResponse> safeChunks = chunks == null ? List.of() : List.copyOf(chunks);
         PromptMode safePromptMode = promptMode == null ? PromptMode.KB_FIRST : promptMode;
@@ -23,6 +30,9 @@ public class PromptBuilder {
                 【回答规则】
                 %s
 
+                【对话历史】
+                %s
+
                 【用户问题】
                 %s
 
@@ -30,7 +40,22 @@ public class PromptBuilder {
                 %s
 
                 【最终回答】
-                """.formatted(roleInstruction(safePromptMode), rules(safePromptMode), normalizedQuestion, formatChunks(safeChunks)).trim();
+                """.formatted(roleInstruction(safePromptMode), rules(safePromptMode),
+                        formatHistory(history), normalizedQuestion, formatChunks(safeChunks)).trim();
+    }
+
+    private String formatHistory(List<ChatMessage> history) {
+        if (history == null || history.isEmpty()) {
+            return "无";
+        }
+        StringBuilder builder = new StringBuilder("以下内容仅用于理解追问中的指代，不可替代当前检索资料或作为引用依据。\n");
+        for (ChatMessage message : history) {
+            String content = normalizeContent(message.getContent());
+            builder.append(message.getRole() == ChatRole.USER ? "用户：" : "助手：")
+                    .append(content, 0, Math.min(content.length(), 1200))
+                    .append('\n');
+        }
+        return builder.toString().trim();
     }
 
     private String normalizeQuestion(String question) {

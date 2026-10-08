@@ -795,6 +795,51 @@ select:focus {
   padding: 4px 10px;
 }
 
+.chat-header-actions,
+.chat-rename-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-header-actions button,
+.chat-rename-form button:not(.primary-button),
+.suggested-questions button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.chat-header-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-header-actions .danger-text {
+  color: #b91c1c;
+}
+
+.chat-rename-form input {
+  min-width: 160px;
+}
+
+.suggested-questions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.suggested-questions button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
 .message-list {
   display: flex;
   flex: 1 1 auto;

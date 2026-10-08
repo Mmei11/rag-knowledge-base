@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
+import com.example.ragkb.chat.entity.ChatMessage;
+import com.example.ragkb.chat.entity.ChatRole;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -74,5 +76,15 @@ class PromptBuilderTests {
         assertThatThrownBy(() -> promptBuilder.build(" ", List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("question must not be blank");
+    }
+
+    @Test
+    void shouldIncludeConversationHistoryBeforeFollowUp() {
+        String prompt = promptBuilder.build("它有什么限制？", List.of(), PromptMode.STRICT_KB, List.of(
+                new ChatMessage(1L, 1L, ChatRole.USER, "介绍食品安全法"),
+                new ChatMessage(1L, 1L, ChatRole.ASSISTANT, "食品安全法规定了相关责任。")));
+
+        assertThat(prompt).contains("【对话历史】", "用户：介绍食品安全法", "助手：食品安全法规定了相关责任。", "【用户问题】\n它有什么限制？");
+        assertThat(prompt.indexOf("【对话历史】")).isLessThan(prompt.indexOf("【用户问题】"));
     }
 }

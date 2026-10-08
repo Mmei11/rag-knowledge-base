@@ -16,6 +16,7 @@ import type {
   RegisterRequest,
   SendChatMessageRequest,
   UpdateKnowledgeBaseRequest,
+  UpdateChatSessionRequest,
   UserResponse,
 } from '../types/api'
 
@@ -379,6 +380,24 @@ export const chatApi = {
 
   listSessions() {
     return apiRequest<ChatSessionResponse[]>('/api/chat/sessions')
+  },
+
+  renameSession(sessionId: number, request: UpdateChatSessionRequest) {
+    return apiRequest<ChatSessionResponse>(`/api/chat/sessions/${sessionId}`, {
+      method: 'PUT', body: request,
+    })
+  },
+
+  deleteSession(sessionId: number) {
+    return apiRequest<void>(`/api/chat/sessions/${sessionId}`, { method: 'DELETE' })
+  },
+
+  clearMessages(sessionId: number) {
+    return apiRequest<void>(`/api/chat/sessions/${sessionId}/messages`, { method: 'DELETE' })
+  },
+
+  suggestQuestions(sessionId: number) {
+    return apiRequest<string[]>(`/api/chat/sessions/${sessionId}/suggestions`)
   },
 
   listMessages(sessionId: number) {

@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -127,6 +129,30 @@ class ChatControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].title").value("Java Q&A"));
+    }
+
+    @Test
+    void shouldRenameAndManageSession() throws Exception {
+        when(chatService.renameSession(eq(currentUser), eq(100L), any()))
+                .thenReturn(new ChatSessionResponse(100L, 10L, "新标题", OffsetDateTime.now(), OffsetDateTime.now()));
+        when(chatService.suggestQuestions(currentUser, 100L)).thenReturn(List.of("推荐问题？"));
+
+        mockMvc.perform(put("/api/chat/sessions/100")
+                        .with(authentication(currentUserAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"新标题\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("新标题"));
+        mockMvc.perform(get("/api/chat/sessions/100/suggestions")
+                        .with(authentication(currentUserAuthentication())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value("推荐问题？"));
+        mockMvc.perform(delete("/api/chat/sessions/100/messages")
+                        .with(authentication(currentUserAuthentication())))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/chat/sessions/100")
+                        .with(authentication(currentUserAuthentication())))
+                .andExpect(status().isOk());
     }
 
     @Test

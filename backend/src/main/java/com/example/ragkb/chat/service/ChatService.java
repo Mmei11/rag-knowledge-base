@@ -6,6 +6,7 @@ import com.example.ragkb.chat.dto.ChatReferenceResponse;
 import com.example.ragkb.chat.dto.ChatSessionResponse;
 import com.example.ragkb.chat.dto.CreateChatSessionRequest;
 import com.example.ragkb.chat.dto.SendChatMessageRequest;
+import com.example.ragkb.chat.dto.UpdateChatSessionRequest;
 import com.example.ragkb.chat.entity.ChatMessage;
 import com.example.ragkb.chat.entity.ChatRole;
 import com.example.ragkb.chat.entity.ChatSession;
@@ -16,6 +17,8 @@ import com.example.ragkb.chat.repository.MessageReferenceRepository;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.common.ratelimit.RateLimitService;
+import com.example.ragkb.document.entity.DocumentStatus;
+import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
 import com.example.ragkb.rag.dto.VectorSearchRequest;
@@ -39,6 +42,7 @@ public class ChatService {
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
     private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final DocumentRepository documentRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final MessageReferenceRepository messageReferenceRepository;
@@ -49,6 +53,7 @@ public class ChatService {
 
     public ChatService(
             KnowledgeBaseRepository knowledgeBaseRepository,
+            DocumentRepository documentRepository,
             ChatSessionRepository chatSessionRepository,
             ChatMessageRepository chatMessageRepository,
             MessageReferenceRepository messageReferenceRepository,
@@ -57,6 +62,7 @@ public class ChatService {
             ChatModelService chatModelService,
             RateLimitService rateLimitService) {
         this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.documentRepository = documentRepository;
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.messageReferenceRepository = messageReferenceRepository;
@@ -84,6 +90,56 @@ public class ChatService {
                 .stream()
                 .map(ChatSessionResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    public ChatSessionResponse renameSession(CurrentUser currentUser, Long sessionId, UpdateChatSessionRequest request) {
+        ChatSession session = findSession(currentUser, sessionId);
+        session.rename(request.title().trim());
+        return ChatSessionResponse.from(session);
+    }
+
+    @Transactional
+    public void deleteSession(CurrentUser currentUser, Long sessionId) {
+        ChatSession session = findSession(currentUser, sessionId);
+        chatMessageRepository.deleteBySessionId(sessionId);
+        chatSessionRepository.delete(session);
+    }
+
+    @Transactional
+    public void clearMessages(CurrentUser currentUser, Long sessionId) {
+        ChatSession session = findSession(currentUser, sessionId);
+        chatMessageRepository.deleteBySessionId(sessionId);
+        session.touch();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> suggestQuestions(CurrentUser currentUser, Long sessionId) {
+        ChatSession session = findSession(currentUser, sessionId);
+        List<String> titles = documentRepository
+                .findByKnowledgeBaseIdAndUserIdOrderByCreatedAtDesc(session.getKnowledgeBaseId(), currentUser.id())
+                .stream()
+                .filter(document -> document.getStatus() == DocumentStatus.COMPLETED)
+                .map(document -> document.getFileName().replaceFirst("\\.[^.]+$", ""))
+                .distinct()
+                .limit(3)
+                .toList();
+        if (titles.isEmpty()) {
+            String name = knowledgeBaseRepository.findByIdAndUserId(session.getKnowledgeBaseId(), currentUser.id())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Knowledge base not found"))
+                    .getName();
+            return List.of("“" + name + "”主要包含哪些内容？", "“" + name + "”有哪些核心概念？", "如何开始学习“" + name + "”？");
+        }
+        List<String> questions = new java.util.ArrayList<>(titles.stream()
+                .map(title -> "请概括《" + title + "》的核心内容？")
+                .toList());
+        if (questions.size() < 3) {
+            questions.add("《" + titles.getFirst() + "》有哪些关键要点？");
+        }
+        if (questions.size() < 3) {
+            questions.add("《" + titles.getFirst() + "》在实际场景中如何应用？");
+        }
+        return questions;
     }
 
     @Transactional(readOnly = true)
@@ -116,6 +172,7 @@ public class ChatService {
         ChatSession session = findSession(currentUser, sessionId);
         rateLimitService.checkChatLimit(currentUser.id());
         String question = request.question().trim();
+        List<ChatMessage> history = recentHistory(sessionId);
 
         ChatMessage userMessage = chatMessageRepository.saveAndFlush(new ChatMessage(
                 session.getId(),
@@ -127,7 +184,7 @@ public class ChatService {
                 currentUser,
                 new VectorSearchRequest(
                         session.getKnowledgeBaseId(),
-                        question,
+                        searchQuestion(question, history),
                         request.normalizedTopK(),
                         request.similarityThreshold(),
                         request.normalizedDocumentIds(),
@@ -135,7 +192,7 @@ public class ChatService {
                         request.endDate()));
         List<RetrievedChunkResponse> retrievedChunks = searchResponse.items();
 
-        String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode());
+        String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode(), history);
         long modelStartedAt = System.nanoTime();
         String answer = chatModelService.generate(prompt);
         log.info("chat model completed, userId={}, sessionId={}, promptLength={}, referenceCount={}, durationMs={}",
@@ -171,6 +228,7 @@ public class ChatService {
         ChatSession session = findSession(currentUser, sessionId);
         rateLimitService.checkChatLimit(currentUser.id());
         String question = request.question().trim();
+        List<ChatMessage> history = recentHistory(sessionId);
 
         ChatMessage userMessage = chatMessageRepository.saveAndFlush(new ChatMessage(
                 session.getId(),
@@ -182,14 +240,14 @@ public class ChatService {
                 currentUser,
                 new VectorSearchRequest(
                         session.getKnowledgeBaseId(),
-                        question,
+                        searchQuestion(question, history),
                         request.normalizedTopK(),
                         request.similarityThreshold(),
                         request.normalizedDocumentIds(),
                         request.startDate(),
                         request.endDate()));
         List<RetrievedChunkResponse> retrievedChunks = searchResponse.items();
-        String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode());
+        String prompt = promptBuilder.build(question, retrievedChunks, request.normalizedPromptMode(), history);
 
         return new ChatStreamPreparation(
                 session.getId(),
@@ -249,6 +307,30 @@ public class ChatService {
     private ChatSession findSession(CurrentUser currentUser, Long sessionId) {
         return chatSessionRepository.findByIdAndUserId(sessionId, currentUser.id())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Chat session not found"));
+    }
+
+    private List<ChatMessage> recentHistory(Long sessionId) {
+        List<ChatMessage> messages = chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        List<ChatMessage> completed = new java.util.ArrayList<>();
+        for (int index = 0; index + 1 < messages.size(); index++) {
+            ChatMessage user = messages.get(index);
+            ChatMessage assistant = messages.get(index + 1);
+            if (user.getRole() == ChatRole.USER && assistant.getRole() == ChatRole.ASSISTANT) {
+                completed.add(user);
+                completed.add(assistant);
+                index++;
+            }
+        }
+        return completed.subList(Math.max(0, completed.size() - 6), completed.size());
+    }
+
+    private String searchQuestion(String question, List<ChatMessage> history) {
+        if (history.isEmpty() || question.length() > 60
+                || !question.matches(".*(它|这个|该|上述|前面|刚才|其中|继续|还有|具体|哪些|他们|其|上面|详细|展开|例子|呢).*")) {
+            return question;
+        }
+        String previous = history.get(history.size() - 2).getContent();
+        return previous.substring(0, Math.min(previous.length(), 200)) + " " + question;
     }
 
     private void saveReferences(Long messageId, List<RetrievedChunkResponse> chunks) {

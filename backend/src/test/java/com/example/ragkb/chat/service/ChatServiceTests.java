@@ -12,6 +12,7 @@ import com.example.ragkb.chat.dto.ChatAnswerResponse;
 import com.example.ragkb.chat.dto.ChatSessionResponse;
 import com.example.ragkb.chat.dto.CreateChatSessionRequest;
 import com.example.ragkb.chat.dto.SendChatMessageRequest;
+import com.example.ragkb.chat.dto.UpdateChatSessionRequest;
 import com.example.ragkb.chat.entity.ChatMessage;
 import com.example.ragkb.chat.entity.ChatRole;
 import com.example.ragkb.chat.entity.ChatSession;
@@ -22,6 +23,8 @@ import com.example.ragkb.chat.repository.MessageReferenceRepository;
 import com.example.ragkb.chat.repository.MessageReferenceDetail;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.ratelimit.RateLimitService;
+import com.example.ragkb.document.repository.DocumentRepository;
+import com.example.ragkb.document.entity.Document;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
@@ -51,6 +54,9 @@ class ChatServiceTests {
 
     @Mock
     private KnowledgeBaseRepository knowledgeBaseRepository;
+
+    @Mock
+    private DocumentRepository documentRepository;
 
     @Mock
     private ChatSessionRepository chatSessionRepository;
@@ -121,6 +127,46 @@ class ChatServiceTests {
     }
 
     @Test
+    void shouldRenameClearAndDeleteOwnSession() {
+        ChatService service = service();
+        ChatSession session = session();
+        when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(session));
+
+        assertThat(service.renameSession(currentUser, 100L, new UpdateChatSessionRequest(" 新标题 ")).title())
+                .isEqualTo("新标题");
+        service.clearMessages(currentUser, 100L);
+        service.deleteSession(currentUser, 100L);
+
+        verify(chatMessageRepository, org.mockito.Mockito.times(2)).deleteBySessionId(100L);
+        verify(chatSessionRepository).delete(session);
+    }
+
+    @Test
+    void shouldRejectOtherUsersSessionManagement() {
+        ChatService service = service();
+        when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.clearMessages(currentUser, 100L))
+                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> service.deleteSession(currentUser, 100L))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void shouldSuggestQuestionsFromCompletedDocuments() {
+        ChatService service = service();
+        Document document = new Document(10L, 1L, "食品安全法.pdf", "pdf", 1024, "file.pdf");
+        document.markCompleted();
+        when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(session()));
+        when(documentRepository.findByKnowledgeBaseIdAndUserIdOrderByCreatedAtDesc(10L, 1L))
+                .thenReturn(List.of(document));
+
+        assertThat(service.suggestQuestions(currentUser, 100L))
+                .containsExactly("请概括《食品安全法》的核心内容？", "《食品安全法》有哪些关键要点？",
+                        "《食品安全法》在实际场景中如何应用？");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void shouldSendMessageAndSaveAnswerReferences() {
         ChatService service = service();
@@ -140,7 +186,7 @@ class ChatServiceTests {
         });
         when(ragRetrievalService.search(any(CurrentUser.class), any(VectorSearchRequest.class)))
                 .thenReturn(new VectorSearchResponse(10L, "What is DI?", 5, List.of(chunk)));
-        when(promptBuilder.build("What is DI?", List.of(chunk), PromptMode.KB_FIRST)).thenReturn("prompt");
+        when(promptBuilder.build("What is DI?", List.of(chunk), PromptMode.KB_FIRST, List.of())).thenReturn("prompt");
         when(chatModelService.generate("prompt")).thenReturn("DI is a way to provide dependencies.");
 
         ChatAnswerResponse response = service.sendMessage(
@@ -164,6 +210,34 @@ class ChatServiceTests {
         assertThat(captor.getValue().getFirst().getDocumentId()).isEqualTo(300L);
         assertThat(captor.getValue().getFirst().getChunkId()).isEqualTo(200L);
         verify(rateLimitService).checkChatLimit(1L);
+    }
+
+    @Test
+    void shouldUseCompletedHistoryForFollowUpRetrievalAndPrompt() {
+        ChatService service = service();
+        ChatMessage previousQuestion = new ChatMessage(100L, 1L, ChatRole.USER, "食品安全法规定了什么？");
+        ChatMessage previousAnswer = new ChatMessage(100L, 1L, ChatRole.ASSISTANT, "规定了食品生产经营要求。");
+        when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(session()));
+        when(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(100L))
+                .thenReturn(List.of(previousQuestion, previousAnswer));
+        when(chatMessageRepository.saveAndFlush(any(ChatMessage.class))).thenAnswer(invocation -> {
+            ChatMessage message = invocation.getArgument(0);
+            fillMessage(message, message.getRole() == ChatRole.USER ? 500L : 501L);
+            return message;
+        });
+        when(ragRetrievalService.search(any(CurrentUser.class), any(VectorSearchRequest.class)))
+                .thenReturn(new VectorSearchResponse(10L, "它有哪些要求？", 5, List.of()));
+        when(promptBuilder.build("它有哪些要求？", List.of(), PromptMode.KB_FIRST,
+                List.of(previousQuestion, previousAnswer))).thenReturn("context prompt");
+        when(chatModelService.generate("context prompt")).thenReturn("具体要求如下。");
+
+        service.sendMessage(currentUser, 100L, new SendChatMessageRequest("它有哪些要求？", null));
+
+        ArgumentCaptor<VectorSearchRequest> searchRequest = ArgumentCaptor.forClass(VectorSearchRequest.class);
+        verify(ragRetrievalService).search(eq(currentUser), searchRequest.capture());
+        assertThat(searchRequest.getValue().question()).contains("食品安全法规定了什么？", "它有哪些要求？");
+        verify(promptBuilder).build("它有哪些要求？", List.of(), PromptMode.KB_FIRST,
+                List.of(previousQuestion, previousAnswer));
     }
 
     @Test
@@ -199,7 +273,7 @@ class ChatServiceTests {
         });
         when(ragRetrievalService.search(any(CurrentUser.class), any(VectorSearchRequest.class)))
                 .thenReturn(new VectorSearchResponse(10L, "What is DI?", 5, List.of(chunk)));
-        when(promptBuilder.build("What is DI?", List.of(chunk), PromptMode.KB_FIRST)).thenReturn("prompt");
+        when(promptBuilder.build("What is DI?", List.of(chunk), PromptMode.KB_FIRST, List.of())).thenReturn("prompt");
         doAnswer(invocation -> {
             Consumer<String> onDelta = invocation.getArgument(1);
             onDelta.accept("DI ");
@@ -272,6 +346,7 @@ class ChatServiceTests {
     private ChatService service() {
         return new ChatService(
                 knowledgeBaseRepository,
+                documentRepository,
                 chatSessionRepository,
                 chatMessageRepository,
                 messageReferenceRepository,

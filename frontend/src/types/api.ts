@@ -90,6 +90,10 @@ export type CreateChatSessionRequest = {
   title?: string
 }
 
+export type UpdateChatSessionRequest = {
+  title: string
+}
+
 export type ChatSessionResponse = {
   id: number
   knowledgeBaseId: number

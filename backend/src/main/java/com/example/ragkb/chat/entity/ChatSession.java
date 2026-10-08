@@ -58,6 +58,11 @@ public class ChatSession {
         updatedAt = OffsetDateTime.now();
     }
 
+    public void rename(String title) {
+        this.title = title;
+        touch();
+    }
+
     public Long getId() {
         return id;
     }

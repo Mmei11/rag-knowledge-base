@@ -99,6 +99,19 @@ Content-Type: application/json
 GET {{baseUrl}}/api/chat/sessions
 Authorization: Bearer {{token}}
 
+### Rename chat session
+PUT {{baseUrl}}/api/chat/sessions/{{sessionId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "新的会话标题"
+}
+
+### Suggested questions from the session knowledge base
+GET {{baseUrl}}/api/chat/sessions/{{sessionId}}/suggestions
+Authorization: Bearer {{token}}
+
 ### Send chat message
 POST {{baseUrl}}/api/chat/sessions/{{sessionId}}/messages
 Authorization: Bearer {{token}}
@@ -111,6 +124,14 @@ Content-Type: application/json
 
 ### List chat messages
 GET {{baseUrl}}/api/chat/sessions/{{sessionId}}/messages
+Authorization: Bearer {{token}}
+
+### Clear chat messages
+DELETE {{baseUrl}}/api/chat/sessions/{{sessionId}}/messages
+Authorization: Bearer {{token}}
+
+### Delete chat session
+DELETE {{baseUrl}}/api/chat/sessions/{{sessionId}}
 Authorization: Bearer {{token}}
 
 ### Delete document

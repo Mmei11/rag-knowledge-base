@@ -5,6 +5,7 @@ import com.example.ragkb.chat.dto.ChatMessageResponse;
 import com.example.ragkb.chat.dto.ChatSessionResponse;
 import com.example.ragkb.chat.dto.CreateChatSessionRequest;
 import com.example.ragkb.chat.dto.SendChatMessageRequest;
+import com.example.ragkb.chat.dto.UpdateChatSessionRequest;
 import com.example.ragkb.chat.service.ChatService;
 import com.example.ragkb.chat.service.ChatStreamingService;
 import com.example.ragkb.common.api.ApiResponse;
@@ -14,8 +15,10 @@ import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,6 +46,31 @@ public class ChatController {
     @GetMapping("/sessions")
     public ApiResponse<List<ChatSessionResponse>> listSessions(Authentication authentication) {
         return ApiResponse.success(chatService.listSessions(currentUser(authentication)));
+    }
+
+    @PutMapping("/sessions/{sessionId}")
+    public ApiResponse<ChatSessionResponse> renameSession(
+            Authentication authentication,
+            @PathVariable Long sessionId,
+            @Valid @RequestBody UpdateChatSessionRequest request) {
+        return ApiResponse.success(chatService.renameSession(currentUser(authentication), sessionId, request));
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    public ApiResponse<Void> deleteSession(Authentication authentication, @PathVariable Long sessionId) {
+        chatService.deleteSession(currentUser(authentication), sessionId);
+        return ApiResponse.success(null);
+    }
+
+    @DeleteMapping("/sessions/{sessionId}/messages")
+    public ApiResponse<Void> clearMessages(Authentication authentication, @PathVariable Long sessionId) {
+        chatService.clearMessages(currentUser(authentication), sessionId);
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping("/sessions/{sessionId}/suggestions")
+    public ApiResponse<List<String>> suggestQuestions(Authentication authentication, @PathVariable Long sessionId) {
+        return ApiResponse.success(chatService.suggestQuestions(currentUser(authentication), sessionId));
     }
 
     @GetMapping("/sessions/{sessionId}/messages")

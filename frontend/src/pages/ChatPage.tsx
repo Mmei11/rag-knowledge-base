@@ -118,6 +118,7 @@ function MarkdownContent({ content, streaming = false }: { content: string; stre
 
 export function ChatPage() {
   const messageListRef = useRef<HTMLDivElement | null>(null)
+  const questionInputRef = useRef<HTMLTextAreaElement | null>(null)
   const documentFilterRef = useRef<HTMLDivElement | null>(null)
   const streamAbortControllerRef = useRef<AbortController | null>(null)
 
@@ -125,6 +126,9 @@ export function ChatPage() {
   const [documents, setDocuments] = useState<DocumentResponse[]>([])
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [messages, setMessages] = useState<ChatMessageResponse[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
   const [streamingAnswer, setStreamingAnswer] = useState<StreamingAnswer | null>(null)
 
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<number | null>(null)
@@ -274,6 +278,7 @@ export function ChatPage() {
   useEffect(() => {
     if (!selectedSessionId) {
       setMessages([])
+      setSuggestions([])
       setActiveReference(null)
       setActiveReferenceQuestion('')
       setReferenceExpanded(false)
@@ -282,6 +287,17 @@ export function ChatPage() {
 
     void runAction(() => loadMessages(selectedSessionId))
   }, [loadMessages, runAction, selectedSessionId])
+
+  useEffect(() => {
+    setSuggestions([])
+    setEditingTitle(false)
+    if (!selectedSessionId) return
+    let active = true
+    void chatApi.suggestQuestions(selectedSessionId)
+      .then((items) => { if (active) setSuggestions(items) })
+      .catch(() => { if (active) setSuggestions([]) })
+    return () => { active = false }
+  }, [selectedSessionId])
 
   useEffect(() => {
     if (selectedSession) {
@@ -324,6 +340,48 @@ export function ChatPage() {
       await loadSessions()
       setSelectedSessionId(created.id)
       setMessage('会话已创建')
+    })
+  }
+
+  async function handleRenameSession(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedSessionId) return
+    const title = newTitle.trim()
+    if (!title || validateSessionTitle(title)) {
+      setError(title ? validateSessionTitle(title) : '会话标题不能为空')
+      return
+    }
+    await runAction(async () => {
+      await chatApi.renameSession(selectedSessionId, { title })
+      await loadSessions()
+      setEditingTitle(false)
+      setMessage('会话已重命名')
+    })
+  }
+
+  async function handleDeleteSession() {
+    if (!selectedSessionId || !window.confirm(`确定删除会话“${selectedSession?.title}”及其所有聊天记录吗？`)) return
+    await runAction(async () => {
+      await chatApi.deleteSession(selectedSessionId)
+      setMessages([])
+      setStreamingAnswer(null)
+      setActiveReference(null)
+      setSelectedSessionId(null)
+      await loadSessions()
+      setMessage('会话已删除')
+    })
+  }
+
+  async function handleClearMessages() {
+    if (!selectedSessionId || !window.confirm('确定清空当前会话的所有聊天记录吗？')) return
+    await runAction(async () => {
+      await chatApi.clearMessages(selectedSessionId)
+      setMessages([])
+      setStreamingAnswer(null)
+      setActiveReference(null)
+      setActiveReferenceQuestion('')
+      await loadSessions()
+      setMessage('聊天记录已清空')
     })
   }
 
@@ -505,9 +563,24 @@ export function ChatPage() {
         <div className="chat-header">
           <div>
             <p className="eyebrow">智能问答</p>
-            <h2>{selectedSession?.title ?? '请选择或创建会话'}</h2>
+            {editingTitle ? (
+              <form className="chat-rename-form" onSubmit={handleRenameSession}>
+                <input aria-label="新会话标题" autoFocus maxLength={200} onChange={(event) => setNewTitle(event.target.value)} value={newTitle} />
+                <button className="primary-button" disabled={loading} type="submit">保存</button>
+                <button onClick={() => setEditingTitle(false)} type="button">取消</button>
+              </form>
+            ) : <h2>{selectedSession?.title ?? '请选择或创建会话'}</h2>}
           </div>
-          <span>{selectedKnowledgeBase?.name ?? '未选择知识库'}</span>
+          <div className="chat-header-actions">
+            <span>{selectedKnowledgeBase?.name ?? '未选择知识库'}</span>
+            {selectedSession && !editingTitle && (
+              <>
+                <button disabled={loading || answering} onClick={() => { setNewTitle(selectedSession.title); setEditingTitle(true) }} type="button">重命名</button>
+                <button disabled={loading || answering || messages.length === 0} onClick={() => void handleClearMessages()} type="button">清空记录</button>
+                <button className="danger-text" disabled={loading || answering} onClick={() => void handleDeleteSession()} type="button">删除会话</button>
+              </>
+            )}
+          </div>
         </div>
 
         <StatusMessage error={error} message={message} />
@@ -577,7 +650,14 @@ export function ChatPage() {
           {messages.length === 0 && !answering && (
             <div className="empty-detail">
               <h2>暂无消息</h2>
-              <p>创建会话后，在下方输入问题开始问答</p>
+              <p>选择一个推荐问题，或在下方输入问题开始问答</p>
+              {selectedSession && suggestions.length > 0 && (
+                <div className="suggested-questions">
+                  {suggestions.map((suggestion) => (
+                    <button key={suggestion} onClick={() => { setQuestion(suggestion); questionInputRef.current?.focus() }} type="button">{suggestion}</button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -696,6 +776,7 @@ export function ChatPage() {
           </div>
           <div className="question-input-row">
             <textarea
+              ref={questionInputRef}
               maxLength={1000}
               onChange={(event) => setQuestion(event.target.value)}
               placeholder="输入一个关于当前知识库的问题"
