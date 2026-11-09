@@ -100,9 +100,15 @@
 
 当前版本支持按当前知识库内的文档多选，以及按文档上传日期范围筛选。尚未接入外部 rerank 模型。
 
+已建立离线检索评测体系：评测集包含 21 条标注问答，直接调用 `RagRetrievalService.search` 计算
+HitRate@K、Recall@K、Precision@K、nDCG@K、MRR@K 和平均检索耗时，并输出 JSON / Markdown 报告。
+当前 baseline 为 Hit@5=0.9524、Recall@5=0.9524、MRR=0.8571、nDCG@10=0.8821，平均检索耗时 627ms。
+详见 `docs/retrieval-evaluation.md` 与 `docs/retrieval-eval-baseline.md`。
+
 ### 简历亮点
 
 ```text
+构建 RAG 离线评测体系，以 Recall@K / nDCG@K / MRR 量化检索效果，为 Rerank、中文分词和融合参数调优提供基线。
 基于 pgvector 实现语义检索，并扩展相似度阈值、TopK 控制和混合检索策略。
 ```
 

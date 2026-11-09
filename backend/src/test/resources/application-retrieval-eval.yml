@@ -1,0 +1,10 @@
+spring:
+  config:
+    # Reuse the local development credentials (embedding provider, Qwen key, DB).
+    # The file is optional and lives at the repository root.
+    import: optional:file:../.env[.properties]
+
+logging:
+  level:
+    root: WARN
+    com.example.ragkb: INFO

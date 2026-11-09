@@ -1,0 +1,118 @@
+{
+  "name": "food-safety-baseline",
+  "description": "食品安全知识库检索 baseline。标签格式为 fileName#chunkIndex，在切块策略不变的前提下可跨数据库重建保持稳定。",
+  "username": "meijinchao",
+  "knowledgeBaseName": "Food secrity",
+  "topK": 10,
+  "ks": [1, 3, 5, 10],
+  "cases": [
+    {
+      "id": "q-law-layout",
+      "question": "食品生产企业对设备布局和工艺流程有什么要求以防止交叉污染？",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#12"]
+    },
+    {
+      "id": "q-law-haccp",
+      "question": "国家鼓励食品生产经营企业实施危害分析与关键控制点体系吗？",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#18"]
+    },
+    {
+      "id": "q-law-record-retention",
+      "question": "食用农产品进货查验记录和凭证至少应当保存多久？",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#24"]
+    },
+    {
+      "id": "q-law-accident-report",
+      "question": "发生食品安全事故后，接到报告的县级人民政府食品安全监督管理部门应当向谁报告？",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#36"]
+    },
+    {
+      "id": "q-law-penalty-inspection",
+      "question": "食品生产者未按规定对采购的食品原料进行检验，可能受到什么处罚？",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#48"]
+    },
+    {
+      "id": "q-gb-wall-door",
+      "question": "食品生产车间的墙壁、隔断和门窗有哪些卫生要求？",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#5"]
+    },
+    {
+      "id": "q-gb-temperature",
+      "question": "贮存食品时对温湿度控制设施有什么要求？",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#10"]
+    },
+    {
+      "id": "q-gb-clothing",
+      "question": "不同作业区的工作服可以混用吗？",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#15"]
+    },
+    {
+      "id": "q-gb-allergen",
+      "question": "食品生产企业应如何开展致敏物质管理？",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#20"]
+    },
+    {
+      "id": "q-gb-haccp-principles",
+      "question": "HACCP 的七项原理分别是什么？",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#26"]
+    },
+    {
+      "id": "q-gb-micro-monitor",
+      "question": "生产过程微生物监控的取样点和频率应如何调整？",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#40"]
+    },
+    {
+      "id": "q-fb-risk-source",
+      "question": "食品安全风险可能来自哪些方面？",
+      "relevantChunks": ["食源性疾病与安全操作要点.txt#0"]
+    },
+    {
+      "id": "q-fb-high-risk",
+      "question": "哪些人群更容易受到食源性疾病的严重影响？",
+      "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
+    },
+    {
+      "id": "q-fb-suspected",
+      "question": "出现疑似食源性疾病时应该保留哪些物品并记录什么信息？",
+      "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
+    },
+    {
+      "id": "q-sampling-representative",
+      "question": "食品采样时如何保证样品具有代表性？",
+      "relevantChunks": ["食品安全.pdf#45"]
+    },
+    {
+      "id": "q-pufferfish-treatment",
+      "question": "河豚中毒有哪些治疗措施？",
+      "relevantChunks": ["食品安全.pdf#120"]
+    },
+    {
+      "id": "q-paper-title",
+      "question": "投稿的论文题目是什么？",
+      "relevantChunks": ["Cover Letter.docx#0"]
+    },
+    {
+      "id": "q-paper-metrics",
+      "question": "论文在 HOTA 和 AssA 指标上的表现如何？",
+      "relevantChunks": ["Cover Letter.docx#2"]
+    },
+    {
+      "id": "q-fda-shellfish",
+      "question": "What are the requirements for molluscan shellfish original containers and records?",
+      "questionZh": "软体贝类的原容器和记录有哪些要求？",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
+    },
+    {
+      "id": "q-fda-hepatitis",
+      "question": "What does an anicteric hepatitis A infection mean for food employees?",
+      "questionZh": "食品员工感染无黄疸型肝炎意味着什么？",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1200"]
+    },
+    {
+      "id": "q-fda-heating",
+      "question": "What is the maximum one-hour time limit for the initial heating stage and why?",
+      "questionZh": "初始加热阶段最长一小时的时间限制是多少，为什么这样规定？",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1440"]
+    }
+  ]
+}
