@@ -41,6 +41,9 @@ flowchart TD
 `RerankService` 默认是 `none`，直接使用 RRF 顺序；设置 `RERANK_PROVIDER=dashscope` 后，
 会对 RRF 融合后的候选 chunk 调用 Cross-Encoder rerank 再截断 TopK。
 
+关键词召回使用 jieba 分词后的 `search_text` 和 PostgreSQL GIN 索引，具体见
+`docs/chinese-keyword-search.md`。
+
 ## 为什么要切分 Chunk
 
 文档通常比较长，不能整篇直接拿去检索或塞进 Prompt，所以需要切成多个片段。

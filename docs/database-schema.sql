@@ -80,6 +80,7 @@ CREATE TABLE document_chunks (
     knowledge_base_id BIGINT NOT NULL,
     chunk_index INTEGER NOT NULL,
     content TEXT NOT NULL,
+    search_text TEXT,
     token_count INTEGER NOT NULL DEFAULT 0,
     page_number INTEGER,
     embedding VECTOR(1024),
@@ -103,6 +104,9 @@ CREATE TABLE document_chunks (
 
 CREATE INDEX idx_document_chunks_knowledge_base_id
     ON document_chunks (knowledge_base_id);
+
+CREATE INDEX idx_document_chunks_search_text_fts
+    ON document_chunks USING GIN (to_tsvector('simple', search_text));
 
 -- User conversations scoped to one knowledge base.
 CREATE TABLE chat_sessions (

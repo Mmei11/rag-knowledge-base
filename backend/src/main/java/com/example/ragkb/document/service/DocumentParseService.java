@@ -2,6 +2,7 @@ package com.example.ragkb.document.service;
 
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
+import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.chunk.TextChunk;
 import com.example.ragkb.document.chunk.TextChunker;
 import com.example.ragkb.document.dto.DocumentParseResponse;
@@ -35,6 +36,7 @@ public class DocumentParseService {
     private final TextChunker textChunker;
     private final EmbeddingService embeddingService;
     private final DocumentProgressService documentProgressService;
+    private final ChineseTextSegmenter textSegmenter;
 
     public DocumentParseService(
             DocumentRepository documentRepository,
@@ -43,7 +45,8 @@ public class DocumentParseService {
             DocumentParserFactory parserFactory,
             TextChunker textChunker,
             EmbeddingService embeddingService,
-            DocumentProgressService documentProgressService) {
+            DocumentProgressService documentProgressService,
+            ChineseTextSegmenter textSegmenter) {
         this.documentRepository = documentRepository;
         this.documentChunkRepository = documentChunkRepository;
         this.documentChunkEmbeddingRepository = documentChunkEmbeddingRepository;
@@ -51,6 +54,7 @@ public class DocumentParseService {
         this.textChunker = textChunker;
         this.embeddingService = embeddingService;
         this.documentProgressService = documentProgressService;
+        this.textSegmenter = textSegmenter;
     }
 
     public DocumentParseResponse parse(CurrentUser currentUser, Long documentId) {
@@ -102,7 +106,8 @@ public class DocumentParseService {
                             chunk.content(),
                             chunk.tokenCount(),
                             chunk.pageNumber(),
-                            chunk.pdfPageNumber()))
+                            chunk.pdfPageNumber(),
+                            textSegmenter.buildSearchText(chunk.content())))
                     .toList());
 
             reportProgress(document, 55, "正在生成向量");

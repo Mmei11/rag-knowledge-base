@@ -95,12 +95,18 @@
 ### 当前状态
 
 基础实现已完成：支持按请求调节 TopK 和最低相关度；后端使用向量检索与关键词检索生成候选集，
-再通过 RRF（倒数排名融合）合并排序。PostgreSQL 增加全文索引和 `pg_trgm` 子串索引，
-其中子串索引用于弥补 PostgreSQL 原生全文检索对中文分词支持有限的问题。
+再通过 RRF（倒数排名融合）合并排序。PostgreSQL 增加全文索引和 `pg_trgm` 子串索引；目前已在
+应用侧接入 jieba 中文分词，把 chunk 分词结果写入 `search_text`，并用
+`GIN(to_tsvector('simple', search_text))` 建立中文全文索引。
 
 当前版本支持按当前知识库内的文档多选，以及按文档上传日期范围筛选。已接入 DashScope
 Cross-Encoder rerank（`qwen3-rerank`），默认 `RERANK_PROVIDER=none`，不改变现有行为；
 设置 `RERANK_PROVIDER=dashscope` 后在 RRF 候选池上精排。
+
+已接入应用侧中文分词：`DocumentParseService` 入库时写入 `search_text`，关键词 SQL 使用
+`to_tsvector('simple', search_text) @@ plainto_tsquery('simple', ?)`，中文关键词检索真正走 GIN 索引。
+46 条评测集（rerank 关闭）上 Hit@5=0.9130、Recall@5=0.9130、nDCG@10=0.8134、MRR=0.7870；
+多片段类 MRR 从 0.6333 提升到 0.8667，同义改写类 MRR 从 0.6813 提升到 0.7292。
 
 已建立离线检索评测体系：评测集包含 46 条标注问答，覆盖原文措辞、同义改写、跨语言、多 chunk、
 难负例和元数据过滤六类问题，直接调用 `RagRetrievalService.search` 计算 HitRate@K、Recall@K、
@@ -110,13 +116,14 @@ Precision@K、nDCG@K、MRR@K 和平均检索耗时，并输出带分类/难度�
 但 MRR 仅 0.6333；英文 FDA 资料的中文问题仍有明显漏召回。阈值消融显示 0.35 与 0.20 的指标完全一致，
 当前瓶颈在排序与跨语言召回，不在相似度阈值。开启 rerank 后 Hit@5=0.9565、Recall@5=0.9348、
 MRR=0.8207、nDCG@10=0.8326，同义改写和难负例提升明显；2 条 hard 漏召回被救回，另外 2 条因未进入
-候选池仍需 Query 改写。详见 `docs/retrieval-evaluation.md`、`docs/retrieval-eval-baseline.md`
-与 `docs/retrieval-eval-rerank.md`。
+候选池仍需 Query 改写。详见 `docs/retrieval-evaluation.md`、`docs/retrieval-eval-baseline.md`、
+`docs/retrieval-eval-rerank.md`、`docs/retrieval-eval-keyword.md` 与 `docs/chinese-keyword-search.md`。
 
 ### 简历亮点
 
 ```text
 接入 Cross-Encoder 重排序（DashScope qwen3-rerank），在 RRF 召回候选上精排，Hit@5 从 0.9130 提升到 0.9565、MRR 从 0.7623 提升到 0.8207。
+接入 jieba 中文分词与 search_text GIN 索引，让中文关键词检索真正走全文索引，MRR 从 0.7623 提升到 0.7870。
 构建 RAG 离线评测体系，以 Recall@K / nDCG@K / MRR 量化检索效果，为 Rerank、中文分词和融合参数调优提供基线。
 基于 pgvector 实现语义检索，并扩展相似度阈值、TopK 控制和混合检索策略。
 ```

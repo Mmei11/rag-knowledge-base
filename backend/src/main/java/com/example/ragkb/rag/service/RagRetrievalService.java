@@ -2,6 +2,7 @@ package com.example.ragkb.rag.service;
 
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
+import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
 import com.example.ragkb.rag.config.RerankProperties;
@@ -36,6 +37,7 @@ public class RagRetrievalService {
     private final RetrievalProperties retrievalProperties;
     private final RerankService rerankService;
     private final RerankProperties rerankProperties;
+    private final ChineseTextSegmenter textSegmenter;
 
     public RagRetrievalService(
             KnowledgeBaseRepository knowledgeBaseRepository,
@@ -44,7 +46,8 @@ public class RagRetrievalService {
             RagRetrievalRepository ragRetrievalRepository,
             RetrievalProperties retrievalProperties,
             RerankService rerankService,
-            RerankProperties rerankProperties) {
+            RerankProperties rerankProperties,
+            ChineseTextSegmenter textSegmenter) {
         this.knowledgeBaseRepository = knowledgeBaseRepository;
         this.documentRepository = documentRepository;
         this.embeddingService = embeddingService;
@@ -52,6 +55,7 @@ public class RagRetrievalService {
         this.retrievalProperties = retrievalProperties;
         this.rerankService = rerankService;
         this.rerankProperties = rerankProperties;
+        this.textSegmenter = textSegmenter;
     }
 
     @Transactional(readOnly = true)
@@ -81,7 +85,7 @@ public class RagRetrievalService {
         List<RetrievedChunkResponse> keywordItems = ragRetrievalRepository.searchKeywordChunks(
                 request.knowledgeBaseId(),
                 queryEmbedding,
-                SearchKeywordExtractor.extract(question),
+                textSegmenter.segmentForQuery(question),
                 candidateLimit,
                 filters);
         List<RetrievedChunkResponse> fused = fuseResults(vectorItems, keywordItems, similarityThreshold);

@@ -7,7 +7,7 @@
 评测直接调用 `RagRetrievalService.search`，因此覆盖完整链路：
 
 ```text
-问题 -> Query Embedding -> pgvector 向量召回 + 关键词召回 -> RRF 融合 -> Cross-Encoder Rerank -> TopK
+问题 -> Query Embedding -> pgvector 向量召回 + 中文分词关键词召回 -> RRF 融合 -> Cross-Encoder Rerank -> TopK
 ```
 
 ## 代码位置
@@ -164,6 +164,33 @@ cd backend
 ./scripts/retrieval-eval.sh -Dretrieval.eval.output=target/retrieval-eval-none
 RERANK_PROVIDER=dashscope RERANK_MODEL=qwen3-rerank \
   ./scripts/retrieval-eval.sh -Dretrieval.eval.output=target/retrieval-eval-dashscope
+```
+
+## 中文分词 A/B 结果
+
+同一份 46 条评测集，关闭 rerank 以隔离关键词检索的影响：
+
+| 指标 | 旧关键词 | jieba + plainto_tsquery | 变化 |
+|---|---|---|---|
+| Hit@1 | 0.6739 | 0.6957 | +2.17pp |
+| Hit@5 | 0.9130 | 0.9130 | 持平 |
+| Recall@5 | 0.9130 | 0.9130 | 持平 |
+| nDCG@10 | 0.7994 | 0.8134 | +1.40pp |
+| MRR@10 | 0.7623 | 0.7870 | +2.47pp |
+| 平均耗时 | 754ms | 566ms | -188ms |
+
+- 同义改写类 MRR 0.6813 → 0.7292。
+- 多片段类 MRR 0.6333 → 0.8667，nDCG@10 0.7231 → 0.8489。
+- 原文措辞类略有波动（MRR 0.8194 → 0.7963），跨语言和难负例基本不变。
+- 最初使用 OR 的 `to_tsquery` 时 Hit@5 降到 0.8913，说明关键词通道不能过度召回；
+  最终改为 AND 语义的 `plainto_tsquery`。
+- 完整报告见 `docs/retrieval-eval-keyword.md`，实现说明见 `docs/chinese-keyword-search.md`。
+
+复现命令：
+
+```bash
+cd backend
+./scripts/retrieval-eval.sh -Dretrieval.eval.output=target/retrieval-eval-keyword
 ```
 
 ## 指标含义

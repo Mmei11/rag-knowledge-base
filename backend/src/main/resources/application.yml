@@ -67,6 +67,10 @@ app:
     candidate-limit: ${RERANK_CANDIDATE_LIMIT:30}
     timeout-ms: ${RERANK_TIMEOUT_MS:3000}
     max-document-chars: ${RERANK_MAX_DOCUMENT_CHARS:2000}
+  search:
+    backfill:
+      enabled: ${SEARCH_TEXT_BACKFILL_ENABLED:false}
+      batch-size: ${SEARCH_TEXT_BACKFILL_BATCH_SIZE:500}
   chat-model:
     provider: ${CHAT_MODEL_PROVIDER:mock}
     model: ${CHAT_MODEL_NAME:mock-chat-model}

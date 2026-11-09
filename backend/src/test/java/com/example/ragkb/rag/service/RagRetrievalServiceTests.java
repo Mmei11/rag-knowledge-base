@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.ragkb.common.exception.BusinessException;
+import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
@@ -251,7 +252,8 @@ class RagRetrievalServiceTests {
                 ragRetrievalRepository,
                 new RetrievalProperties(),
                 rerankService,
-                rerankProperties);
+                rerankProperties,
+                new ChineseTextSegmenter());
     }
 
     private KnowledgeBase knowledgeBase() {

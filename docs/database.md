@@ -81,6 +81,7 @@ document_id
 knowledge_base_id
 chunk_index
 content
+search_text
 embedding VECTOR(1024)
 ```
 
@@ -142,6 +143,7 @@ documents(knowledge_base_id)
 documents(user_id)
 documents(status, created_at)
 document_chunks(knowledge_base_id)
+document_chunks(search_text)  -- GIN to_tsvector('simple', search_text)
 chat_sessions(user_id, updated_at DESC)
 chat_messages(session_id, created_at, id)
 message_references(document_id)

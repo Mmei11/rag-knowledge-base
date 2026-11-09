@@ -16,6 +16,7 @@ Embedding 抽象与 mock/OpenAI/Qwen 实现
 pgvector 向量存储
 相似度检索
 混合检索（向量 + 关键词 + RRF）
+中文分词关键词检索（jieba + PostgreSQL GIN）
 Cross-Encoder 重排（DashScope qwen3-rerank，默认关闭）
 RAG Prompt 构建
 OpenAI/Qwen API 问答生成

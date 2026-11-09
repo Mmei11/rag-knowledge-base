@@ -7,6 +7,7 @@ import com.example.ragkb.rag.model.PgVectorFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -29,22 +30,24 @@ public class RagRetrievalRepository {
     private static final String KEYWORD_SEARCH_SQL = """
             SELECT c.id, c.document_id, c.chunk_index, c.content, d.file_name, c.page_number, c.pdf_page_number,
                    1 - (c.embedding <=> CAST(? AS vector)) AS similarity,
-                   ts_rank_cd(
-                       to_tsvector('simple', c.content),
-                       websearch_to_tsquery('simple', ?)
-                   ) + (%s) AS keyword_score
+                   COALESCE(ts_rank_cd(
+                       to_tsvector('simple', c.search_text),
+                       plainto_tsquery('simple', ?)
+                   ), 0) + (%s) AS keyword_score
             FROM document_chunks c
             JOIN documents d ON d.id = c.document_id
             WHERE c.knowledge_base_id = ?
               AND c.embedding IS NOT NULL
               AND (
-                  to_tsvector('simple', c.content) @@ websearch_to_tsquery('simple', ?)
+                  to_tsvector('simple', c.search_text) @@ plainto_tsquery('simple', ?)
                   OR (%s)
               )
             %s
             ORDER BY keyword_score DESC, c.embedding <=> CAST(? AS vector)
             LIMIT ?
             """;
+
+    private static final Pattern SAFE_TERM = Pattern.compile("[\\p{IsHan}a-z0-9]+");
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -89,16 +92,26 @@ public class RagRetrievalRepository {
             List<String> keywords,
             int candidateLimit,
             RetrievalFilters filters) {
-        if (keywords.isEmpty()) {
+        if (keywords == null || keywords.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> safeKeywords = keywords.stream()
+                .filter(keyword -> keyword != null && !keyword.isBlank())
+                .map(keyword -> keyword.toLowerCase(Locale.ROOT))
+                .filter(keyword -> SAFE_TERM.matcher(keyword).matches())
+                .distinct()
+                .toList();
+        if (safeKeywords.isEmpty()) {
             return List.of();
         }
 
         String vector = PgVectorFormatter.format(queryEmbedding);
-        String keywordQuery = String.join(" ", keywords);
-        String likeScore = String.join(" + ", keywords.stream()
+        String keywordQuery = String.join(" ", safeKeywords);
+        String likeScore = String.join(" + ", safeKeywords.stream()
                 .map(keyword -> "CASE WHEN LOWER(c.content) LIKE ? ESCAPE '!' THEN 1 ELSE 0 END")
                 .toList());
-        String likeCondition = String.join(" OR ", keywords.stream()
+        String likeCondition = String.join(" OR ", safeKeywords.stream()
                 .map(keyword -> "LOWER(c.content) LIKE ? ESCAPE '!'")
                 .toList());
         String sql = KEYWORD_SEARCH_SQL.formatted(likeScore, likeCondition, filterSql(filters));
@@ -106,10 +119,10 @@ public class RagRetrievalRepository {
         List<Object> parameters = new ArrayList<>();
         parameters.add(vector);
         parameters.add(keywordQuery);
-        keywords.forEach(keyword -> parameters.add(toLikePattern(keyword)));
+        safeKeywords.forEach(keyword -> parameters.add(toLikePattern(keyword)));
         parameters.add(knowledgeBaseId);
         parameters.add(keywordQuery);
-        keywords.forEach(keyword -> parameters.add(toLikePattern(keyword)));
+        safeKeywords.forEach(keyword -> parameters.add(toLikePattern(keyword)));
         addFilterParameters(parameters, filters);
         parameters.add(vector);
         parameters.add(candidateLimit);

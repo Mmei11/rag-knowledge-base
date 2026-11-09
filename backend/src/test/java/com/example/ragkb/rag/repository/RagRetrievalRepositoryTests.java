@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
@@ -83,21 +84,41 @@ class RagRetrievalRepositoryTests {
     }
 
     @Test
-    void shouldEscapeKeywordWildcardsForLikeSearch() {
+    void shouldUseSegmentedTermsForKeywordSearch() {
         JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
         RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
         ArgumentCaptor<Object[]> parameterCaptor = ArgumentCaptor.forClass(Object[].class);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
 
         repository.searchKeywordChunks(
+                10L,
+                new EmbeddingVector(List.of(0.1, -0.2)),
+                List.of("Spring", "100"),
+                9,
+                new RetrievalFilters(null, null, null));
+
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), parameterCaptor.capture());
+        assertThat(sqlCaptor.getValue())
+                .contains("to_tsvector('simple', c.search_text)")
+                .contains("plainto_tsquery('simple', ?)");
+        assertThat(parameterCaptor.getValue()).contains("%spring%", "%100%");
+    }
+
+    @Test
+    void shouldSkipKeywordSearchWhenAllTermsAreUnsafe() {
+        JdbcTemplate jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
+        RagRetrievalRepository repository = new RagRetrievalRepository(jdbcTemplate);
+
+        List<RetrievedChunkResponse> items = repository.searchKeywordChunks(
                 10L,
                 new EmbeddingVector(List.of(0.1, -0.2)),
                 List.of("Spring_Boot", "100%"),
                 9,
                 new RetrievalFilters(null, null, null));
 
-        verify(jdbcTemplate).query(anyString(), any(RowMapper.class), parameterCaptor.capture());
-        assertThat(parameterCaptor.getValue()).contains("%spring!_boot%", "%100!%%");
+        assertThat(items).isEmpty();
+        verifyNoInteractions(jdbcTemplate);
     }
 
     @Test

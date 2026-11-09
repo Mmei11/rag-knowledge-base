@@ -29,6 +29,9 @@ public class DocumentChunk {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "search_text", columnDefinition = "TEXT")
+    private String searchText;
+
     @Column(name = "token_count", nullable = false)
     private int tokenCount;
 
@@ -62,10 +65,23 @@ public class DocumentChunk {
             int tokenCount,
             Integer pageNumber,
             Integer pdfPageNumber) {
+        this(documentId, knowledgeBaseId, chunkIndex, content, tokenCount, pageNumber, pdfPageNumber, null);
+    }
+
+    public DocumentChunk(
+            Long documentId,
+            Long knowledgeBaseId,
+            int chunkIndex,
+            String content,
+            int tokenCount,
+            Integer pageNumber,
+            Integer pdfPageNumber,
+            String searchText) {
         this.documentId = documentId;
         this.knowledgeBaseId = knowledgeBaseId;
         this.chunkIndex = chunkIndex;
         this.content = content;
+        this.searchText = searchText;
         this.tokenCount = tokenCount;
         this.pageNumber = pageNumber;
         this.pdfPageNumber = pdfPageNumber;
@@ -94,6 +110,10 @@ public class DocumentChunk {
 
     public String getContent() {
         return content;
+    }
+
+    public String getSearchText() {
+        return searchText;
     }
 
     public int getTokenCount() {

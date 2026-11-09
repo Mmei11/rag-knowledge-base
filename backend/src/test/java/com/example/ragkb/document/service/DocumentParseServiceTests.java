@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.ragkb.common.exception.BusinessException;
+import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.chunk.TextChunker;
 import com.example.ragkb.document.dto.DocumentParseResponse;
 import com.example.ragkb.document.entity.Document;
@@ -91,6 +92,9 @@ class DocumentParseServiceTests {
         assertThat(chunksCaptor.getValue()).hasSize(1);
         assertThat(chunksCaptor.getValue().get(0).getChunkIndex()).isZero();
         assertThat(chunksCaptor.getValue().get(0).getContent()).isEqualTo("Spring Boot notes");
+        assertThat(chunksCaptor.getValue().get(0).getSearchText())
+                .contains("spring")
+                .contains("boot");
         verify(embeddingService).embedBatch(eq(List.of("Spring Boot notes")), any());
         verify(documentChunkEmbeddingRepository).updateEmbeddings(anyList(), anyList());
         verify(documentProgressService).start(100L);
@@ -186,7 +190,8 @@ class DocumentParseServiceTests {
                 parserFactory,
                 new TextChunker(),
                 embeddingService,
-                documentProgressService);
+                documentProgressService,
+                new ChineseTextSegmenter());
     }
 
     private List<DocumentChunk> withIds(List<DocumentChunk> chunks) {
