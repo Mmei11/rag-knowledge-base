@@ -104,7 +104,7 @@ $env:https_proxy='http://127.0.0.1:12450'
 访问地址：
 
 ```text
-前端页面：http://localhost:5173
+前端页面：http://localhost:5175
 后端健康检查：http://localhost:8080/actuator/health
 ```
 
