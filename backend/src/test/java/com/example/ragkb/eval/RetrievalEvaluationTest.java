@@ -226,6 +226,9 @@ class RetrievalEvaluationTest {
             case "openai" -> environment.getProperty("app.openai.embedding-model", "unknown");
             default -> "mock";
         };
+        String rerankProvider = environment.getProperty("app.rerank.provider", "none");
+        String rerankModel = environment.getProperty("app.rerank.model", "unknown");
+        int rerankCandidateLimit = environment.getProperty("app.rerank.candidate-limit", Integer.class, 0);
         double mrr = results.stream()
                 .mapToDouble(RetrievalEvalCaseResult::mrr)
                 .average()
@@ -244,6 +247,9 @@ class RetrievalEvaluationTest {
                 target.knowledgeBase().getId(),
                 provider,
                 model,
+                rerankProvider,
+                rerankModel,
+                rerankCandidateLimit,
                 dataset.effectiveTopK(),
                 dataset.ks(),
                 retrievalProperties.getSimilarityThreshold(),
@@ -321,6 +327,11 @@ class RetrievalEvaluationTest {
                 report.ks(),
                 report.caseCount(),
                 report.defaultSimilarityThreshold());
+        System.out.printf(
+                "Rerank=%s/%s，候选池=%d%n",
+                report.rerankProvider(),
+                report.rerankModel(),
+                report.rerankCandidateLimit());
         System.out.println();
 
         System.out.printf(
@@ -405,6 +416,9 @@ class RetrievalEvaluationTest {
                 .append("（id=").append(report.userId()).append("）\n")
                 .append("- Embedding：").append(report.embeddingProvider())
                 .append(" / ").append(report.embeddingModel()).append("\n")
+                .append("- Rerank：").append(report.rerankProvider())
+                .append(" / ").append(report.rerankModel())
+                .append("，候选池 ").append(report.rerankCandidateLimit()).append("\n")
                 .append("- TopK：").append(report.topK()).append("\n")
                 .append("- 评测用例数：").append(report.caseCount()).append("\n")
                 .append("- 默认相似度阈值：")

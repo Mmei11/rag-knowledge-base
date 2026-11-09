@@ -25,14 +25,21 @@ flowchart TD
     Question[用户提问] --> RateLimit[聊天限流检查]
     RateLimit --> SaveUserMessage[保存用户消息]
     SaveUserMessage --> EmbedQuestion[问题向量化]
-    EmbedQuestion --> VectorSearch[pgvector 相似度检索]
-    VectorSearch --> TopK[返回 topK chunks]
+    EmbedQuestion --> VectorSearch[pgvector 向量召回]
+    EmbedQuestion --> KeywordSearch[关键词召回]
+    VectorSearch --> RRF[RRF 融合]
+    KeywordSearch --> RRF
+    RRF --> Rerank[RerankService 精排]
+    Rerank --> TopK[返回 topK chunks]
     TopK --> Prompt[PromptBuilder 拼接上下文]
     Prompt --> Model[ChatModelService 生成回答]
     Model --> SaveAssistant[保存助手消息]
     SaveAssistant --> SaveRefs[保存引用来源]
     SaveRefs --> Response[返回回答和 references]
 ```
+
+`RerankService` 默认是 `none`，直接使用 RRF 顺序；设置 `RERANK_PROVIDER=dashscope` 后，
+会对 RRF 融合后的候选 chunk 调用 Cross-Encoder rerank 再截断 TopK。
 
 ## 为什么要切分 Chunk
 

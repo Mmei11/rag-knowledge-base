@@ -4,6 +4,7 @@ import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.rag.config.RerankProperties;
 import com.example.ragkb.rag.config.RetrievalProperties;
 import com.example.ragkb.rag.dto.RetrievalFilters;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
@@ -11,6 +12,7 @@ import com.example.ragkb.rag.dto.VectorSearchRequest;
 import com.example.ragkb.rag.dto.VectorSearchResponse;
 import com.example.ragkb.rag.model.EmbeddingVector;
 import com.example.ragkb.rag.model.EmbeddingService;
+import com.example.ragkb.rag.model.RerankService;
 import com.example.ragkb.rag.repository.RagRetrievalRepository;
 import com.example.ragkb.security.CurrentUser;
 import java.util.List;
@@ -32,18 +34,24 @@ public class RagRetrievalService {
     private final EmbeddingService embeddingService;
     private final RagRetrievalRepository ragRetrievalRepository;
     private final RetrievalProperties retrievalProperties;
+    private final RerankService rerankService;
+    private final RerankProperties rerankProperties;
 
     public RagRetrievalService(
             KnowledgeBaseRepository knowledgeBaseRepository,
             DocumentRepository documentRepository,
             EmbeddingService embeddingService,
             RagRetrievalRepository ragRetrievalRepository,
-            RetrievalProperties retrievalProperties) {
+            RetrievalProperties retrievalProperties,
+            RerankService rerankService,
+            RerankProperties rerankProperties) {
         this.knowledgeBaseRepository = knowledgeBaseRepository;
         this.documentRepository = documentRepository;
         this.embeddingService = embeddingService;
         this.ragRetrievalRepository = ragRetrievalRepository;
         this.retrievalProperties = retrievalProperties;
+        this.rerankService = rerankService;
+        this.rerankProperties = rerankProperties;
     }
 
     @Transactional(readOnly = true)
@@ -76,8 +84,18 @@ public class RagRetrievalService {
                 SearchKeywordExtractor.extract(question),
                 candidateLimit,
                 filters);
-        List<RetrievedChunkResponse> items = fuseResults(vectorItems, keywordItems, topK, similarityThreshold);
-        log.info("hybrid search completed, userId={}, knowledgeBaseId={}, topK={}, threshold={}, documentFilterCount={}, startDate={}, endDate={}, vectorResultCount={}, keywordResultCount={}, resultCount={}, embeddingMs={}, searchMs={}",
+        List<RetrievedChunkResponse> fused = fuseResults(vectorItems, keywordItems, similarityThreshold);
+        int rerankCandidateCount = Math.min(fused.size(), rerankProperties.effectiveCandidateLimit(topK));
+        List<RetrievedChunkResponse> rerankCandidates = fused.stream()
+                .limit(rerankCandidateCount)
+                .toList();
+        long rerankStartedAt = System.nanoTime();
+        List<RetrievedChunkResponse> reranked = rerankService.rerank(question, rerankCandidates);
+        long rerankDurationMs = elapsedMs(rerankStartedAt);
+        List<RetrievedChunkResponse> items = reranked.stream()
+                .limit(topK)
+                .toList();
+        log.info("hybrid search completed, userId={}, knowledgeBaseId={}, topK={}, threshold={}, documentFilterCount={}, startDate={}, endDate={}, vectorResultCount={}, keywordResultCount={}, rerankProvider={}, rerankCandidateCount={}, rerankMs={}, resultCount={}, embeddingMs={}, searchMs={}",
                 currentUser.id(),
                 request.knowledgeBaseId(),
                 topK,
@@ -87,6 +105,9 @@ public class RagRetrievalService {
                 filters.endDate(),
                 vectorItems.size(),
                 keywordItems.size(),
+                rerankProperties.getProvider(),
+                rerankCandidateCount,
+                rerankDurationMs,
                 items.size(),
                 embeddingDurationMs,
                 elapsedMs(searchStartedAt));
@@ -116,7 +137,6 @@ public class RagRetrievalService {
     private List<RetrievedChunkResponse> fuseResults(
             List<RetrievedChunkResponse> vectorItems,
             List<RetrievedChunkResponse> keywordItems,
-            int topK,
             double similarityThreshold) {
         Map<Long, RankedChunk> rankedChunks = new HashMap<>();
         addReciprocalRankScores(rankedChunks, vectorItems);
@@ -131,7 +151,6 @@ public class RagRetrievalService {
                     }
                     return Double.compare(right.chunk().similarity(), left.chunk().similarity());
                 })
-                .limit(topK)
                 .map(RankedChunk::chunk)
                 .toList();
     }

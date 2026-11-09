@@ -98,20 +98,25 @@
 再通过 RRF（倒数排名融合）合并排序。PostgreSQL 增加全文索引和 `pg_trgm` 子串索引，
 其中子串索引用于弥补 PostgreSQL 原生全文检索对中文分词支持有限的问题。
 
-当前版本支持按当前知识库内的文档多选，以及按文档上传日期范围筛选。尚未接入外部 rerank 模型。
+当前版本支持按当前知识库内的文档多选，以及按文档上传日期范围筛选。已接入 DashScope
+Cross-Encoder rerank（`qwen3-rerank`），默认 `RERANK_PROVIDER=none`，不改变现有行为；
+设置 `RERANK_PROVIDER=dashscope` 后在 RRF 候选池上精排。
 
 已建立离线检索评测体系：评测集包含 46 条标注问答，覆盖原文措辞、同义改写、跨语言、多 chunk、
 难负例和元数据过滤六类问题，直接调用 `RagRetrievalService.search` 计算 HitRate@K、Recall@K、
 Precision@K、nDCG@K、MRR@K 和平均检索耗时，并输出带分类/难度分层的 JSON / Markdown 报告。
-当前 baseline 为 Hit@5=0.9130、Recall@5=0.9130、MRR=0.7623、nDCG@10=0.7994，平均检索耗时 623ms。
+当前 baseline 为 Hit@5=0.9130、Recall@5=0.9130、MRR=0.7623、nDCG@10=0.7994，平均检索耗时 754ms。
 其中原文类 Hit@5=0.9444、同义改写类 0.8750、跨语言类 0.8333、难负例类 0.8333，多 chunk 类虽然全部命中
 但 MRR 仅 0.6333；英文 FDA 资料的中文问题仍有明显漏召回。阈值消融显示 0.35 与 0.20 的指标完全一致，
-当前瓶颈在排序与跨语言召回，不在相似度阈值。详见 `docs/retrieval-evaluation.md`
-与 `docs/retrieval-eval-baseline.md`。
+当前瓶颈在排序与跨语言召回，不在相似度阈值。开启 rerank 后 Hit@5=0.9565、Recall@5=0.9348、
+MRR=0.8207、nDCG@10=0.8326，同义改写和难负例提升明显；2 条 hard 漏召回被救回，另外 2 条因未进入
+候选池仍需 Query 改写。详见 `docs/retrieval-evaluation.md`、`docs/retrieval-eval-baseline.md`
+与 `docs/retrieval-eval-rerank.md`。
 
 ### 简历亮点
 
 ```text
+接入 Cross-Encoder 重排序（DashScope qwen3-rerank），在 RRF 召回候选上精排，Hit@5 从 0.9130 提升到 0.9565、MRR 从 0.7623 提升到 0.8207。
 构建 RAG 离线评测体系，以 Recall@K / nDCG@K / MRR 量化检索效果，为 Rerank、中文分词和融合参数调优提供基线。
 基于 pgvector 实现语义检索，并扩展相似度阈值、TopK 控制和混合检索策略。
 ```

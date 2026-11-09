@@ -7,7 +7,7 @@
 评测直接调用 `RagRetrievalService.search`，因此覆盖完整链路：
 
 ```text
-问题 -> Query Embedding -> pgvector 向量召回 + 关键词召回 -> RRF 融合 -> TopK
+问题 -> Query Embedding -> pgvector 向量召回 + 关键词召回 -> RRF 融合 -> Cross-Encoder Rerank -> TopK
 ```
 
 ## 代码位置
@@ -137,6 +137,34 @@ docker run --rm --add-host=host.docker.internal:host-gateway \
 
 4 条完全漏召回（`q-paper-title`、`q-xl-handwashing-zh`、`q-para-heating`、`q-hn-hepatitis-exclusion`）
 属于排序或跨语言召回问题，调低阈值不会改善。下一步应优先做 Rerank 和查询改写，而不是继续降低阈值。
+
+## Rerank A/B 结果
+
+同一份 46 条评测集，分别关闭和开启 DashScope Cross-Encoder rerank：
+
+| 指标 | none | dashscope / qwen3-rerank | 变化 |
+|---|---|---|---|
+| Hit@1 | 0.6739 | 0.7174 | +4.35pp |
+| Hit@5 | 0.9130 | 0.9565 | +4.35pp |
+| Recall@5 | 0.9130 | 0.9348 | +2.17pp |
+| nDCG@10 | 0.7994 | 0.8326 | +3.32pp |
+| MRR@10 | 0.7623 | 0.8207 | +5.84pp |
+| 平均耗时 | 754ms | 1111ms | +357ms |
+
+- 同义改写类 Hit@5 从 0.8750 提升到 1.0000，难负例类从 0.8333 提升到 1.0000。
+- `q-para-heating`、`q-hn-hepatitis-exclusion` 两条 hard 漏召回被救回。
+- `q-paper-title`、`q-xl-handwashing-zh` 仍然漏召回，因为正确答案没有进入 30 条候选池；
+  rerank 只能在候选池内重排，这类问题需要 Query 改写或更换 embedding 模型。
+- 完整报告见 `docs/retrieval-eval-rerank.md`。
+
+复现命令：
+
+```bash
+cd backend
+./scripts/retrieval-eval.sh -Dretrieval.eval.output=target/retrieval-eval-none
+RERANK_PROVIDER=dashscope RERANK_MODEL=qwen3-rerank \
+  ./scripts/retrieval-eval.sh -Dretrieval.eval.output=target/retrieval-eval-dashscope
+```
 
 ## 指标含义
 

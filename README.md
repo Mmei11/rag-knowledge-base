@@ -15,6 +15,8 @@ PDF/TXT/Markdown/Word/Excel 文档解析
 Embedding 抽象与 mock/OpenAI/Qwen 实现
 pgvector 向量存储
 相似度检索
+混合检索（向量 + 关键词 + RRF）
+Cross-Encoder 重排（DashScope qwen3-rerank，默认关闭）
 RAG Prompt 构建
 OpenAI/Qwen API 问答生成
 聊天会话、消息、引用记录
@@ -180,6 +182,11 @@ QWEN_EMBEDDING_MODEL=qwen3.7-text-embedding-flash
 QWEN_EMBEDDING_BATCH_SIZE=20
 QWEN_EMBEDDING_CONCURRENCY=3
 EMBEDDING_DIMENSION=1024
+
+# 可选：开启 Cross-Encoder 重排；默认 none
+RERANK_PROVIDER=dashscope
+RERANK_MODEL=qwen3-rerank
+RERANK_CANDIDATE_LIMIT=30
 ```
 
 详细说明见 `docs/qwen-integration.md`。

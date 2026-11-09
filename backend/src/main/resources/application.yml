@@ -59,6 +59,14 @@ app:
   retrieval:
     similarity-threshold: ${RETRIEVAL_SIMILARITY_THRESHOLD:0.35}
     candidate-multiplier: ${RETRIEVAL_CANDIDATE_MULTIPLIER:3}
+  rerank:
+    provider: ${RERANK_PROVIDER:none}
+    endpoint: ${RERANK_ENDPOINT:https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank}
+    model: ${RERANK_MODEL:qwen3-rerank}
+    api-key: ${RERANK_API_KEY:}
+    candidate-limit: ${RERANK_CANDIDATE_LIMIT:30}
+    timeout-ms: ${RERANK_TIMEOUT_MS:3000}
+    max-document-chars: ${RERANK_MAX_DOCUMENT_CHARS:2000}
   chat-model:
     provider: ${CHAT_MODEL_PROVIDER:mock}
     model: ${CHAT_MODEL_NAME:mock-chat-model}

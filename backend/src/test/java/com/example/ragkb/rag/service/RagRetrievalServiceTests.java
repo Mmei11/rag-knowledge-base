@@ -13,6 +13,7 @@ import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.rag.config.RerankProperties;
 import com.example.ragkb.rag.config.RetrievalProperties;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
 import com.example.ragkb.rag.dto.RetrievalFilters;
@@ -20,12 +21,15 @@ import com.example.ragkb.rag.dto.VectorSearchRequest;
 import com.example.ragkb.rag.dto.VectorSearchResponse;
 import com.example.ragkb.rag.model.EmbeddingService;
 import com.example.ragkb.rag.model.EmbeddingVector;
+import com.example.ragkb.rag.model.NoopRerankService;
+import com.example.ragkb.rag.model.RerankService;
 import com.example.ragkb.rag.repository.RagRetrievalRepository;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.user.entity.UserRole;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -175,13 +179,79 @@ class RagRetrievalServiceTests {
                 .hasMessage("知识库不存在");
     }
 
+    @Test
+    void shouldRerankFusedCandidatesBeforeApplyingTopK() {
+        EmbeddingVector queryEmbedding = new EmbeddingVector(List.of(0.1, 0.2));
+        RetrievedChunkResponse first = new RetrievedChunkResponse(1L, 100L, 0, "first", 0.90);
+        RetrievedChunkResponse second = new RetrievedChunkResponse(2L, 100L, 1, "second", 0.80);
+        RetrievedChunkResponse third = new RetrievedChunkResponse(3L, 100L, 2, "third", 0.70);
+        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(embeddingService.embedText("Spring Boot")).thenReturn(queryEmbedding);
+        when(ragRetrievalRepository.searchSimilarChunks(
+                eq(10L), eq(queryEmbedding), eq(6), eq(0.35), any(RetrievalFilters.class)))
+                .thenReturn(List.of(first, second, third));
+        when(ragRetrievalRepository.searchKeywordChunks(
+                eq(10L), eq(queryEmbedding), anyList(), eq(6), any(RetrievalFilters.class)))
+                .thenReturn(List.of());
+
+        RerankService reversing = (query, candidates) -> candidates.reversed();
+        RagRetrievalService service = service(reversing, new RerankProperties());
+
+        VectorSearchResponse response = service.search(
+                currentUser,
+                new VectorSearchRequest(10L, "Spring Boot", 2));
+
+        assertThat(response.items()).containsExactly(third, second);
+    }
+
+    @Test
+    void shouldLimitRerankPoolToConfiguredCandidateLimit() {
+        EmbeddingVector queryEmbedding = new EmbeddingVector(List.of(0.1, 0.2));
+        List<RetrievedChunkResponse> items = List.of(
+                new RetrievedChunkResponse(1L, 100L, 0, "one", 0.90),
+                new RetrievedChunkResponse(2L, 100L, 1, "two", 0.85),
+                new RetrievedChunkResponse(3L, 100L, 2, "three", 0.80),
+                new RetrievedChunkResponse(4L, 100L, 3, "four", 0.75),
+                new RetrievedChunkResponse(5L, 100L, 4, "five", 0.70));
+        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(embeddingService.embedText("Spring Boot")).thenReturn(queryEmbedding);
+        when(ragRetrievalRepository.searchSimilarChunks(
+                eq(10L), eq(queryEmbedding), eq(3), eq(0.35), any(RetrievalFilters.class)))
+                .thenReturn(items);
+        when(ragRetrievalRepository.searchKeywordChunks(
+                eq(10L), eq(queryEmbedding), anyList(), eq(3), any(RetrievalFilters.class)))
+                .thenReturn(List.of());
+
+        AtomicReference<Integer> rerankCandidateCount = new AtomicReference<>();
+        RerankService capturing = (query, candidates) -> {
+            rerankCandidateCount.set(candidates.size());
+            return candidates;
+        };
+        RerankProperties rerankProperties = new RerankProperties();
+        rerankProperties.setCandidateLimit(2);
+        RagRetrievalService service = service(capturing, rerankProperties);
+
+        VectorSearchResponse response = service.search(
+                currentUser,
+                new VectorSearchRequest(10L, "Spring Boot", 1));
+
+        assertThat(rerankCandidateCount.get()).isEqualTo(2);
+        assertThat(response.items()).hasSize(1);
+    }
+
     private RagRetrievalService service() {
+        return service(new NoopRerankService(), new RerankProperties());
+    }
+
+    private RagRetrievalService service(RerankService rerankService, RerankProperties rerankProperties) {
         return new RagRetrievalService(
                 knowledgeBaseRepository,
                 documentRepository,
                 embeddingService,
                 ragRetrievalRepository,
-                new RetrievalProperties());
+                new RetrievalProperties(),
+                rerankService,
+                rerankProperties);
     }
 
     private KnowledgeBase knowledgeBase() {

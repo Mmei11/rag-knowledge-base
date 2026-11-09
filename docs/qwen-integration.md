@@ -89,3 +89,52 @@ Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8080/actuator/health
 ```
 
 然后重新注册/登录，创建知识库，上传文档，等文档状态变成 `COMPLETED` 后进入智能问答测试。
+
+## Cross-Encoder Rerank
+
+检索链路在 RRF 融合后可选接入 DashScope 的文本重排序接口，对候选 chunk 做精排。
+默认关闭，不影响现有行为。
+
+配置：
+
+```text
+RERANK_PROVIDER=dashscope
+RERANK_ENDPOINT=https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
+RERANK_MODEL=qwen3-rerank
+# 留空时复用 QWEN_API_KEY
+RERANK_API_KEY=
+RERANK_CANDIDATE_LIMIT=30
+RERANK_TIMEOUT_MS=3000
+RERANK_MAX_DOCUMENT_CHARS=2000
+```
+
+已验证可用模型：`qwen3-rerank`、`gte-rerank-v2`、`qwen3-vl-rerank`。
+`qwen3-rerank` 是纯文本重排，默认使用它。
+
+实现位置：
+
+```text
+backend/src/main/java/com/example/ragkb/rag/config/RerankProperties.java
+backend/src/main/java/com/example/ragkb/rag/model/RerankService.java
+backend/src/main/java/com/example/ragkb/rag/model/NoopRerankService.java
+backend/src/main/java/com/example/ragkb/rag/model/MockRerankService.java
+backend/src/main/java/com/example/ragkb/rag/model/DashScopeRerankService.java
+```
+
+说明：
+
+```text
+RERANK_PROVIDER=none（默认）：直接使用 RRF 排序。
+RERANK_PROVIDER=mock：本地词面重叠重排，仅用于链路测试。
+RERANK_PROVIDER=dashscope：调用真实 rerank API。
+超时、HTTP 错误或响应解析失败时自动回退到 RRF 顺序，不阻断问答。
+```
+
+接口探测：
+
+```bash
+curl -X POST "$RERANK_ENDPOINT" \
+  -H "Authorization: Bearer $QWEN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen3-rerank","input":{"query":"食品安全","documents":["食品应当无毒无害","今天天气很好"]},"parameters":{"top_n":2,"return_documents":false}}'
+```

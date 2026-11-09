@@ -78,6 +78,13 @@ services:
       QWEN_EMBEDDING_MODEL: ${QWEN_EMBEDDING_MODEL:-qwen3.7-text-embedding-flash}
       QWEN_EMBEDDING_BATCH_SIZE: ${QWEN_EMBEDDING_BATCH_SIZE:-20}
       QWEN_EMBEDDING_CONCURRENCY: ${QWEN_EMBEDDING_CONCURRENCY:-3}
+      RERANK_PROVIDER: ${RERANK_PROVIDER:-none}
+      RERANK_ENDPOINT: ${RERANK_ENDPOINT:-https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank}
+      RERANK_MODEL: ${RERANK_MODEL:-qwen3-rerank}
+      RERANK_API_KEY: ${RERANK_API_KEY:-}
+      RERANK_CANDIDATE_LIMIT: ${RERANK_CANDIDATE_LIMIT:-30}
+      RERANK_TIMEOUT_MS: ${RERANK_TIMEOUT_MS:-3000}
+      RERANK_MAX_DOCUMENT_CHARS: ${RERANK_MAX_DOCUMENT_CHARS:-2000}
       # The host uses a local proxy. Containers cannot reach 127.0.0.1 on the
       # host directly, so use Docker Desktop's host gateway for Qwen/OpenAI.
       HTTP_PROXY: ${HTTP_PROXY:-http://host.docker.internal:12450}
