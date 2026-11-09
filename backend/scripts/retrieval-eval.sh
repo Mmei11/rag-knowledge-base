@@ -14,6 +14,7 @@ docker run --rm \
   "${ENV_FILE_ARGS[@]}" \
   -e DB_URL="${DB_URL:-jdbc:postgresql://host.docker.internal:5432/rag_kb}" \
   -e REDIS_HOST="${REDIS_HOST:-host.docker.internal}" \
+  -e RETRIEVAL_SIMILARITY_THRESHOLD="${RETRIEVAL_SIMILARITY_THRESHOLD:-0.35}" \
   -v "$BACKEND_DIR":/workspace \
   -v ragkb-maven-repo:/root/.m2 \
   -w /workspace \

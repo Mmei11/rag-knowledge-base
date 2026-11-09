@@ -125,8 +125,18 @@ docker run --rm --add-host=host.docker.internal:host-gateway \
 | `-Dretrieval.eval.dataset=/path/to/dataset.json` | 使用自定义评测集 |
 | `-Dretrieval.eval.output=target/retrieval-eval` | 报告输出目录 |
 | `-Dretrieval.eval.minRecallAt5=0.8` | 当 Recall@5 低于阈值时让测试失败，可用于回归门禁 |
+| `RETRIEVAL_SIMILARITY_THRESHOLD=0.20 ./scripts/retrieval-eval.sh` | 覆盖检索相似度阈值，用于阈值消融 |
 
 报告会写到 `backend/target/retrieval-eval/<dataset>-<timestamp>.json` 和 `.md`。
+
+## 阈值消融结论
+
+在 `food-safety-hardened` 上分别以 `0.35` 和 `0.20` 运行，Hit@5、Recall@5、nDCG@10、MRR 完全一致；
+日志中的 `vectorResultCount` 基本都等于 `candidateLimit = topK × candidateMultiplier = 30`，
+说明当前阈值没有过滤掉候选，不是召回瓶颈。
+
+4 条完全漏召回（`q-paper-title`、`q-xl-handwashing-zh`、`q-para-heating`、`q-hn-hepatitis-exclusion`）
+属于排序或跨语言召回问题，调低阈值不会改善。下一步应优先做 Rerank 和查询改写，而不是继续降低阈值。
 
 ## 指标含义
 
@@ -136,12 +146,12 @@ docker run --rm --add-host=host.docker.internal:host-gateway \
 - **nDCG@K**：考虑排序位置的归一化折损累计增益，越靠前得分越高。
 - **MRR@K**：第一个相关片段排名的倒数均值。
 
-当前评测集每条问题只标注 1 个相关 chunk，因此 Recall@K 与 HitRate@K 数值相同；如果要观察多片段召回，需要给单条问题标注多个 `relevantChunks`。
+单片段问题中 Recall@K 与 HitRate@K 数值相同；多片段问题中 Recall@K 会低于 HitRate@K，除非所有标注片段都被召回。当前评测集已包含多 chunk 用例，可以直接观察这一差异。
 
 ## 注意事项
 
 1. **Embedding 必须与建库时一致**。如果文档是用 Qwen 向量化的，评测也必须用同一个 Qwen embedding 模型；否则向量空间不可比，指标没有意义。
 2. **Mock embedding 不能用于质量评测**。`MockEmbeddingService` 基于文本哈希生成随机向量，只适合验证链路能否跑通。
-3. **当前 baseline 偏乐观**。评测问题是从语料中抽样后直接写的，措辞与原文重合度高；后续应补充口语化、同义改写和难负例。
+3. **当前 baseline 仍有提升空间**。评测集已覆盖原文、同义改写、跨语言、多 chunk、难负例和过滤六类问题，但仍可继续补充无答案问题和更口语化的对抗样本。
 4. **chunk 标签依赖切块策略**。如果调整 `TextChunker` 的 chunk size / overlap，需要重新标注 `fileName#chunkIndex`。
-5. **评测会真实调用 embedding API**，21 条问题约消耗 21 次 embedding 请求，注意额度与耗时。
+5. **评测会真实调用 embedding API**，46 条问题约消耗 46 次 embedding 请求，注意额度与耗时。

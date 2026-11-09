@@ -7,6 +7,8 @@ public record RetrievalEvalCase(
         String id,
         String question,
         String questionZh,
+        String category,
+        String difficulty,
         List<String> relevantChunks,
         List<String> documentFileNames,
         LocalDate startDate,
@@ -20,6 +22,8 @@ public record RetrievalEvalCase(
         }
         id = id == null || id.isBlank() ? question : id.trim();
         questionZh = questionZh == null || questionZh.isBlank() ? null : questionZh.trim();
+        category = category == null || category.isBlank() ? "uncategorized" : category.trim();
+        difficulty = difficulty == null || difficulty.isBlank() ? "unspecified" : difficulty.trim();
         relevantChunks = relevantChunks == null ? List.of() : List.copyOf(relevantChunks);
         if (relevantChunks.isEmpty()) {
             throw new IllegalArgumentException("evaluation case must define relevantChunks: " + id);

@@ -100,10 +100,14 @@
 
 当前版本支持按当前知识库内的文档多选，以及按文档上传日期范围筛选。尚未接入外部 rerank 模型。
 
-已建立离线检索评测体系：评测集包含 21 条标注问答，直接调用 `RagRetrievalService.search` 计算
-HitRate@K、Recall@K、Precision@K、nDCG@K、MRR@K 和平均检索耗时，并输出 JSON / Markdown 报告。
-当前 baseline 为 Hit@5=0.9524、Recall@5=0.9524、MRR=0.8571、nDCG@10=0.8821，平均检索耗时 627ms。
-详见 `docs/retrieval-evaluation.md` 与 `docs/retrieval-eval-baseline.md`。
+已建立离线检索评测体系：评测集包含 46 条标注问答，覆盖原文措辞、同义改写、跨语言、多 chunk、
+难负例和元数据过滤六类问题，直接调用 `RagRetrievalService.search` 计算 HitRate@K、Recall@K、
+Precision@K、nDCG@K、MRR@K 和平均检索耗时，并输出带分类/难度分层的 JSON / Markdown 报告。
+当前 baseline 为 Hit@5=0.9130、Recall@5=0.9130、MRR=0.7623、nDCG@10=0.7994，平均检索耗时 623ms。
+其中原文类 Hit@5=0.9444、同义改写类 0.8750、跨语言类 0.8333、难负例类 0.8333，多 chunk 类虽然全部命中
+但 MRR 仅 0.6333；英文 FDA 资料的中文问题仍有明显漏召回。阈值消融显示 0.35 与 0.20 的指标完全一致，
+当前瓶颈在排序与跨语言召回，不在相似度阈值。详见 `docs/retrieval-evaluation.md`
+与 `docs/retrieval-eval-baseline.md`。
 
 ### 简历亮点
 

@@ -7,6 +7,8 @@ public record RetrievalEvalCaseResult(
         String id,
         String question,
         String questionZh,
+        String category,
+        String difficulty,
         int retrievedCount,
         int totalRelevant,
         int matchedRelevant,

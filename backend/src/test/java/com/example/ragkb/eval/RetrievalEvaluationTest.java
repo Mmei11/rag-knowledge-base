@@ -196,6 +196,8 @@ class RetrievalEvaluationTest {
                 evalCase.id(),
                 evalCase.question(),
                 evalCase.questionZh(),
+                evalCase.category(),
+                evalCase.difficulty(),
                 items.size(),
                 keys.size(),
                 (int) matched,
@@ -252,7 +254,35 @@ class RetrievalEvaluationTest {
                 average(results, RetrievalEvalCaseResult::ndcg, dataset.ks()),
                 mrr,
                 averageLatencyMs,
+                summarizeGroups(groupBy(results, RetrievalEvalCaseResult::category), dataset.ks()),
+                summarizeGroups(groupBy(results, RetrievalEvalCaseResult::difficulty), dataset.ks()),
                 List.copyOf(results));
+    }
+
+    private Map<String, List<RetrievalEvalCaseResult>> groupBy(
+            List<RetrievalEvalCaseResult> results,
+            Function<RetrievalEvalCaseResult, String> classifier) {
+        return results.stream().collect(Collectors.groupingBy(
+                classifier, LinkedHashMap::new, Collectors.toList()));
+    }
+
+    private Map<String, RetrievalEvalGroupSummary> summarizeGroups(
+            Map<String, List<RetrievalEvalCaseResult>> groups,
+            List<Integer> ks) {
+        Map<String, RetrievalEvalGroupSummary> summaries = new LinkedHashMap<>();
+        groups.forEach((group, results) -> summaries.put(
+                group,
+                new RetrievalEvalGroupSummary(
+                        group,
+                        results.size(),
+                        average(results, RetrievalEvalCaseResult::hitRate, ks),
+                        average(results, RetrievalEvalCaseResult::recall, ks),
+                        average(results, RetrievalEvalCaseResult::ndcg, ks),
+                        results.stream()
+                                .mapToDouble(RetrievalEvalCaseResult::mrr)
+                                .average()
+                                .orElse(0.0))));
+        return summaries;
     }
 
     private Map<Integer, Double> average(
@@ -327,6 +357,19 @@ class RetrievalEvaluationTest {
                 report.mrr(),
                 report.averageLatencyMs());
         System.out.println();
+        System.out.println("分组表现：");
+        report.categorySummaries().forEach((category, summary) -> System.out.printf(
+                "  %-16s 用例=%2d，命中率@%d=%.4f，召回率@%d=%.4f，nDCG@%d=%.4f，MRR=%.4f%n",
+                displayCategory(category),
+                summary.caseCount(),
+                displayK,
+                summary.hitRate().getOrDefault(displayK, 0.0),
+                displayK,
+                summary.recall().getOrDefault(displayK, 0.0),
+                displayNdcgK,
+                summary.ndcg().getOrDefault(displayNdcgK, 0.0),
+                summary.mrr()));
+        System.out.println();
     }
 
     private Path writeReport(RetrievalEvalDataset dataset, RetrievalEvalReport report)
@@ -387,15 +430,25 @@ class RetrievalEvaluationTest {
                 .append(String.format(Locale.ROOT, "%.4f", report.mrr())).append('\n')
                 .append("- 平均检索耗时：").append(report.averageLatencyMs()).append("ms\n\n");
 
+        int displayK = report.ks().contains(5) ? 5 : report.ks().getLast();
+        int displayNdcgK = report.ks().contains(10) ? 10 : report.ks().getLast();
+        markdown.append("## 分组统计\n\n");
+        appendGroupTable(markdown, "按问题类型", report.categorySummaries(), displayK, displayNdcgK,
+                this::displayCategory);
+        appendGroupTable(markdown, "按难度", report.difficultySummaries(), displayK, displayNdcgK,
+                this::displayDifficulty);
+
         markdown.append("## 逐条结果\n\n");
-        markdown.append("| 用例 | 问题 | 中文翻译 | 命中率@").append(report.ks().getLast())
+        markdown.append("| 用例 | 类型 | 难度 | 问题 | 中文翻译 | 命中率@").append(report.ks().getLast())
                 .append(" | 召回率@").append(report.ks().getLast())
                 .append(" | nDCG@").append(report.ks().getLast())
                 .append(" | MRR | 耗时 | 命中 / 相关 |\n")
-                .append("|---|---|---|---|---|---|---|---|---|\n");
+                .append("|---|---|---|---|---|---|---|---|---|---|---|\n");
         for (RetrievalEvalCaseResult result : report.cases()) {
             int lastK = report.ks().getLast();
             markdown.append("| ").append(escape(result.id()))
+                    .append(" | ").append(escape(displayCategory(result.category())))
+                    .append(" | ").append(escape(displayDifficulty(result.difficulty())))
                     .append(" | ").append(escape(result.question()))
                     .append(" | ").append(escape(result.questionZh() == null ? "—" : result.questionZh()))
                     .append(" | ").append(formatMetric(result.hitRate().getOrDefault(lastK, 0.0)))
@@ -408,6 +461,29 @@ class RetrievalEvaluationTest {
                     .append(" |\n");
         }
         return markdown.toString();
+    }
+
+    private void appendGroupTable(
+            StringBuilder markdown,
+            String title,
+            Map<String, RetrievalEvalGroupSummary> summaries,
+            int displayK,
+            int displayNdcgK,
+            Function<String, String> labelMapper) {
+        markdown.append("### ").append(title).append("\n\n")
+                .append("| 分组 | 用例数 | 命中率@").append(displayK)
+                .append(" | 召回率@").append(displayK)
+                .append(" | nDCG@").append(displayNdcgK)
+                .append(" | MRR |\n")
+                .append("|---|---|---|---|---|---|\n");
+        summaries.forEach((group, summary) -> markdown.append("| ").append(escape(labelMapper.apply(group)))
+                .append(" | ").append(summary.caseCount())
+                .append(" | ").append(formatMetric(summary.hitRate().getOrDefault(displayK, 0.0)))
+                .append(" | ").append(formatMetric(summary.recall().getOrDefault(displayK, 0.0)))
+                .append(" | ").append(formatMetric(summary.ndcg().getOrDefault(displayNdcgK, 0.0)))
+                .append(" | ").append(formatMetric(summary.mrr()))
+                .append(" |\n"));
+        markdown.append('\n');
     }
 
     private void appendMetricRow(
@@ -446,6 +522,27 @@ class RetrievalEvaluationTest {
 
     private String escape(String value) {
         return value == null ? "" : value.replace("|", "\\|").replace("\n", " ");
+    }
+
+    private String displayCategory(String category) {
+        return switch (category) {
+            case "original" -> "原文措辞";
+            case "paraphrase" -> "同义改写";
+            case "cross_lingual" -> "跨语言";
+            case "multi_chunk" -> "多片段";
+            case "hard_negative" -> "难负例";
+            case "filter" -> "元数据过滤";
+            default -> category;
+        };
+    }
+
+    private String displayDifficulty(String difficulty) {
+        return switch (difficulty) {
+            case "easy" -> "简单";
+            case "medium" -> "中等";
+            case "hard" -> "困难";
+            default -> difficulty;
+        };
     }
 
     private void assertMinimumRecall(RetrievalEvalReport report) {

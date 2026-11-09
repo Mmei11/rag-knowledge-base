@@ -40,6 +40,8 @@ class RetrievalEvalDatasetLoaderTests {
         assertThat(dataset.cases()).singleElement()
                 .satisfies(evalCase -> {
                     assertThat(evalCase.id()).isEqualTo("what is food safety?");
+                    assertThat(evalCase.category()).isEqualTo("uncategorized");
+                    assertThat(evalCase.difficulty()).isEqualTo("unspecified");
                     assertThat(evalCase.relevantChunks()).containsExactly("doc.pdf#1");
                     assertThat(evalCase.chunkKeys()).singleElement()
                             .satisfies(key -> assertThat(key.canonical()).isEqualTo("doc.pdf#1"));

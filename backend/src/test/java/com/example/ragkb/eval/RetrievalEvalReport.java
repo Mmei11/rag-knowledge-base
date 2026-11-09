@@ -22,5 +22,7 @@ public record RetrievalEvalReport(
         Map<Integer, Double> ndcg,
         double mrr,
         long averageLatencyMs,
+        Map<String, RetrievalEvalGroupSummary> categorySummaries,
+        Map<String, RetrievalEvalGroupSummary> difficultySummaries,
         List<RetrievalEvalCaseResult> cases) {
 }

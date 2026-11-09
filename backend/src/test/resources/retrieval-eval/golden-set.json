@@ -1,6 +1,6 @@
 {
-  "name": "food-safety-baseline",
-  "description": "食品安全知识库检索 baseline。标签格式为 fileName#chunkIndex，在切块策略不变的前提下可跨数据库重建保持稳定。",
+  "name": "food-safety-hardened",
+  "description": "食品安全知识库增强评测集：覆盖原文措辞、同义改写、跨语言、多 chunk、难负例和元数据过滤六类问题。标签格式为 fileName#chunkIndex。",
   "username": "meijinchao",
   "knowledgeBaseName": "Food secrity",
   "topK": 10,
@@ -9,110 +9,350 @@
     {
       "id": "q-law-layout",
       "question": "食品生产企业对设备布局和工艺流程有什么要求以防止交叉污染？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["中华人民共和国食品安全法.pdf#12"]
     },
     {
       "id": "q-law-haccp",
       "question": "国家鼓励食品生产经营企业实施危害分析与关键控制点体系吗？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["中华人民共和国食品安全法.pdf#18"]
     },
     {
       "id": "q-law-record-retention",
       "question": "食用农产品进货查验记录和凭证至少应当保存多久？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["中华人民共和国食品安全法.pdf#24"]
     },
     {
       "id": "q-law-accident-report",
       "question": "发生食品安全事故后，接到报告的县级人民政府食品安全监督管理部门应当向谁报告？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["中华人民共和国食品安全法.pdf#36"]
     },
     {
       "id": "q-law-penalty-inspection",
       "question": "食品生产者未按规定对采购的食品原料进行检验，可能受到什么处罚？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["中华人民共和国食品安全法.pdf#48"]
     },
     {
-      "id": "q-gb-wall-door",
-      "question": "食品生产车间的墙壁、隔断和门窗有哪些卫生要求？",
+      "id": "q-gb-wall-ground",
+      "question": "食品生产车间的墙壁与地面交界处有什么卫生要求？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#5"]
     },
     {
       "id": "q-gb-temperature",
       "question": "贮存食品时对温湿度控制设施有什么要求？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#10"]
     },
     {
       "id": "q-gb-clothing",
       "question": "不同作业区的工作服可以混用吗？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#15"]
     },
     {
       "id": "q-gb-allergen",
       "question": "食品生产企业应如何开展致敏物质管理？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#20"]
     },
     {
       "id": "q-gb-haccp-principles",
       "question": "HACCP 的七项原理分别是什么？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#26"]
     },
     {
       "id": "q-gb-micro-monitor",
       "question": "生产过程微生物监控的取样点和频率应如何调整？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#40"]
     },
     {
       "id": "q-fb-risk-source",
       "question": "食品安全风险可能来自哪些方面？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食源性疾病与安全操作要点.txt#0"]
     },
     {
       "id": "q-fb-high-risk",
       "question": "哪些人群更容易受到食源性疾病的严重影响？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
     },
     {
       "id": "q-fb-suspected",
       "question": "出现疑似食源性疾病时应该保留哪些物品并记录什么信息？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
     },
     {
       "id": "q-sampling-representative",
       "question": "食品采样时如何保证样品具有代表性？",
+      "category": "original",
+      "difficulty": "easy",
       "relevantChunks": ["食品安全.pdf#45"]
     },
     {
       "id": "q-pufferfish-treatment",
       "question": "河豚中毒有哪些治疗措施？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["食品安全.pdf#120"]
     },
     {
       "id": "q-paper-title",
       "question": "投稿的论文题目是什么？",
+      "category": "original",
+      "difficulty": "hard",
       "relevantChunks": ["Cover Letter.docx#0"]
     },
     {
       "id": "q-paper-metrics",
       "question": "论文在 HOTA 和 AssA 指标上的表现如何？",
+      "category": "original",
+      "difficulty": "medium",
       "relevantChunks": ["Cover Letter.docx#2"]
     },
     {
       "id": "q-fda-shellfish",
       "question": "What are the requirements for molluscan shellfish original containers and records?",
       "questionZh": "软体贝类的原容器和记录有哪些要求？",
+      "category": "cross_lingual",
+      "difficulty": "hard",
       "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
     },
     {
       "id": "q-fda-hepatitis",
       "question": "What does an anicteric hepatitis A infection mean for food employees?",
       "questionZh": "食品员工感染无黄疸型肝炎意味着什么？",
+      "category": "cross_lingual",
+      "difficulty": "hard",
       "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1200"]
     },
     {
       "id": "q-fda-heating",
       "question": "What is the maximum one-hour time limit for the initial heating stage and why?",
       "questionZh": "初始加热阶段最长一小时的时间限制是多少，为什么这样规定？",
+      "category": "cross_lingual",
+      "difficulty": "hard",
       "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1440"]
+    },
+    {
+      "id": "q-xl-shellfish-zh",
+      "question": "软体贝类必须一直放在原包装容器里吗？有什么例外情况？",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
+    },
+    {
+      "id": "q-xl-handwashing-zh",
+      "question": "食品员工在哪些情况下必须洗手？",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#210"]
+    },
+    {
+      "id": "q-xl-law-health-en",
+      "question": "What are the health check requirements for food production workers in China?",
+      "questionZh": "中国食品生产人员的健康检查有什么要求？",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#17"]
+    },
+    {
+      "id": "q-para-health-check",
+      "question": "食品厂员工是不是每年都要体检并拿到健康证才能上岗？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#17"]
+    },
+    {
+      "id": "q-para-layout",
+      "question": "生产车间怎么布置设备和工艺流程，才能避免交叉污染？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#12"]
+    },
+    {
+      "id": "q-para-records",
+      "question": "卖菜时进货查验的票据最少要留多长时间？",
+      "category": "paraphrase",
+      "difficulty": "hard",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#24"]
+    },
+    {
+      "id": "q-para-allergen",
+      "question": "厂里怎么识别和管理可能引起过敏的原料？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#20"]
+    },
+    {
+      "id": "q-para-micro",
+      "question": "车间做微生物监测时，采样点和检测频率要怎么调整？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#40"]
+    },
+    {
+      "id": "q-para-fb-high-risk",
+      "question": "哪些人吃了不安全食品后更容易出现严重后果？",
+      "category": "paraphrase",
+      "difficulty": "easy",
+      "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
+    },
+    {
+      "id": "q-para-sampling",
+      "question": "抽检食品时，怎么做才能让样品有代表性？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": ["食品安全.pdf#45"]
+    },
+    {
+      "id": "q-para-heating",
+      "question": "FDA 为什么规定初始加热阶段最长只能一小时？",
+      "category": "paraphrase",
+      "difficulty": "hard",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1440"]
+    },
+    {
+      "id": "q-multi-wall-door",
+      "question": "食品生产车间的墙壁和门窗分别有什么卫生要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#5",
+        "食品生产通用卫生规范_GB14881-2025.pdf#6"
+      ]
+    },
+    {
+      "id": "q-multi-pest",
+      "question": "生产车间和仓库如何防止虫害侵入？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#6",
+        "食品生产通用卫生规范_GB14881-2025.pdf#14"
+      ]
+    },
+    {
+      "id": "q-multi-health-hygiene",
+      "question": "食品生产人员的健康管理和进入作业区的个人卫生分别有什么要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#17",
+        "食品生产通用卫生规范_GB14881-2025.pdf#13"
+      ]
+    },
+    {
+      "id": "q-multi-additive",
+      "question": "食品添加剂经营者采购时要记录什么？超范围使用食品添加剂会受什么处罚？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#22",
+        "中华人民共和国食品安全法.pdf#46"
+      ]
+    },
+    {
+      "id": "q-multi-haccp",
+      "question": "GB14881 对 HACCP 体系的要求以及 HACCP 的七项原理分别是什么？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#12",
+        "食品生产通用卫生规范_GB14881-2025.pdf#26"
+      ]
+    },
+    {
+      "id": "q-hn-additive-records",
+      "question": "食品添加剂经营者采购食品添加剂时应当查验哪些证明并记录什么？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#22"]
+    },
+    {
+      "id": "q-hn-accident-report",
+      "question": "食品安全事故发生后，县级监管部门接到报告后应该向哪一级政府报告？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#36"]
+    },
+    {
+      "id": "q-hn-door-insect",
+      "question": "生产车间与外界相通的门，怎么防止苍蝇等虫害进入？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#6"]
+    },
+    {
+      "id": "q-hn-shellfish-repack",
+      "question": "软体贝类在什么情况下可以转移到消费者自取容器中？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#242"]
+    },
+    {
+      "id": "q-hn-hepatitis-exclusion",
+      "question": "食品员工被诊断为甲型肝炎后，什么情况下会被排除出工作岗位？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#184"]
+    },
+    {
+      "id": "q-hn-record-retention",
+      "question": "食品生产企业的原料进货查验记录最少要保存多久？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#19"]
+    },
+    {
+      "id": "q-filter-law-health",
+      "question": "食品生产经营人员健康检查有什么要求？",
+      "category": "filter",
+      "difficulty": "medium",
+      "documentFileNames": ["中华人民共和国食品安全法.pdf"],
+      "relevantChunks": ["中华人民共和国食品安全法.pdf#17"]
+    },
+    {
+      "id": "q-filter-gb-pest",
+      "question": "如何防止虫害侵入生产车间？",
+      "category": "filter",
+      "difficulty": "hard",
+      "documentFileNames": ["食品生产通用卫生规范_GB14881-2025.pdf"],
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#6",
+        "食品生产通用卫生规范_GB14881-2025.pdf#14"
+      ]
+    },
+    {
+      "id": "q-filter-fda-shellfish",
+      "question": "What are the original container requirements for molluscan shellfish?",
+      "questionZh": "软体贝类的原容器要求是什么？",
+      "category": "filter",
+      "difficulty": "hard",
+      "documentFileNames": ["FDA_Food_Code_2026_英文.pdf"],
+      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
     }
   ]
 }
