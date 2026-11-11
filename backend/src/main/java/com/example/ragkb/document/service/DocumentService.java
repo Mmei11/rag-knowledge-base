@@ -1,5 +1,8 @@
 package com.example.ragkb.document.service;
 
+import com.example.ragkb.admin.model.OperationAction;
+import com.example.ragkb.admin.model.OperationResourceType;
+import com.example.ragkb.admin.service.OperationLogService;
 import com.example.ragkb.common.cache.CacheInvalidationService;
 import com.example.ragkb.common.cache.CacheNames;
 import com.example.ragkb.common.exception.BusinessException;
@@ -9,8 +12,9 @@ import com.example.ragkb.document.dto.DocumentResponse;
 import com.example.ragkb.document.dto.DocumentStatusResponse;
 import com.example.ragkb.document.entity.Document;
 import com.example.ragkb.document.repository.DocumentRepository;
+import com.example.ragkb.knowledgebase.dto.KnowledgeBaseAccess;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
-import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.security.CurrentUser;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,24 +35,28 @@ import org.springframework.web.multipart.MultipartFile;
 public class DocumentService {
 
     private final DocumentRepository documentRepository;
-    private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final DocumentStorageProperties properties;
     private final CacheInvalidationService cacheInvalidationService;
+    private final OperationLogService operationLogService;
 
     public DocumentService(
             DocumentRepository documentRepository,
-            KnowledgeBaseRepository knowledgeBaseRepository,
+            KnowledgeBaseAccessService knowledgeBaseAccessService,
             DocumentStorageProperties properties,
-            CacheInvalidationService cacheInvalidationService) {
+            CacheInvalidationService cacheInvalidationService,
+            OperationLogService operationLogService) {
         this.documentRepository = documentRepository;
-        this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.properties = properties;
         this.cacheInvalidationService = cacheInvalidationService;
+        this.operationLogService = operationLogService;
     }
 
     @Transactional
     public DocumentResponse upload(CurrentUser currentUser, Long knowledgeBaseId, MultipartFile file) {
-        KnowledgeBase knowledgeBase = ensureKnowledgeBaseMine(currentUser, knowledgeBaseId);
+        KnowledgeBaseAccess access = knowledgeBaseAccessService.requireWritable(currentUser, knowledgeBaseId);
+        KnowledgeBase knowledgeBase = access.knowledgeBase();
 
         FileMetadata metadata = validate(file);
         Path storedPath = storeFile(knowledgeBaseId, metadata.extension(), file);
@@ -62,10 +70,15 @@ public class DocumentService {
                 storedPath.toString());
 
         knowledgeBase.increaseDocumentCount();
-        DocumentResponse response = DocumentResponse.from(documentRepository.saveAndFlush(document));
-        cacheInvalidationService.evictKnowledgeBaseCaches(currentUser.id(), knowledgeBaseId);
-        cacheInvalidationService.evictDocumentList(currentUser.id(), knowledgeBaseId);
-        return response;
+        Document saved = documentRepository.saveAndFlush(document);
+        operationLogService.record(
+                currentUser.id(),
+                OperationAction.DOCUMENT_UPLOAD,
+                OperationResourceType.DOCUMENT,
+                saved.getId());
+        cacheInvalidationService.evictAllKnowledgeBaseCaches();
+        cacheInvalidationService.evictAllDocumentCaches();
+        return DocumentResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -73,8 +86,8 @@ public class DocumentService {
             cacheNames = CacheNames.DOCUMENT_LIST,
             key = "T(com.example.ragkb.common.cache.CacheKeys).knowledgeBaseDocuments(#currentUser.id(), #knowledgeBaseId)")
     public List<DocumentResponse> listByKnowledgeBase(CurrentUser currentUser, Long knowledgeBaseId) {
-        ensureKnowledgeBaseMine(currentUser, knowledgeBaseId);
-        return documentRepository.findByKnowledgeBaseIdAndUserIdOrderByCreatedAtDesc(knowledgeBaseId, currentUser.id())
+        knowledgeBaseAccessService.requireVisible(currentUser, knowledgeBaseId);
+        return documentRepository.findByKnowledgeBaseIdOrderByCreatedAtDesc(knowledgeBaseId)
                 .stream()
                 .map(DocumentResponse::from)
                 .toList();
@@ -85,7 +98,9 @@ public class DocumentService {
             cacheNames = CacheNames.DOCUMENT_DETAIL,
             key = "T(com.example.ragkb.common.cache.CacheKeys).userResource(#currentUser.id(), #documentId)")
     public DocumentResponse getMine(CurrentUser currentUser, Long documentId) {
-        return DocumentResponse.from(findDocumentMine(currentUser, documentId));
+        Document document = findDocument(documentId);
+        knowledgeBaseAccessService.requireVisible(currentUser, document.getKnowledgeBaseId());
+        return DocumentResponse.from(document);
     }
 
     @Transactional(readOnly = true)
@@ -93,36 +108,46 @@ public class DocumentService {
             cacheNames = CacheNames.DOCUMENT_STATUS,
             key = "T(com.example.ragkb.common.cache.CacheKeys).userResource(#currentUser.id(), #documentId)")
     public DocumentStatusResponse getStatus(CurrentUser currentUser, Long documentId) {
-        return DocumentStatusResponse.from(findDocumentMine(currentUser, documentId));
+        Document document = findDocument(documentId);
+        knowledgeBaseAccessService.requireVisible(currentUser, document.getKnowledgeBaseId());
+        return DocumentStatusResponse.from(document);
     }
 
     @Transactional
     public DocumentStatusResponse reprocess(CurrentUser currentUser, Long documentId) {
-        Document document = findDocumentMine(currentUser, documentId);
+        Document document = findDocument(documentId);
+        knowledgeBaseAccessService.requireWritable(currentUser, document.getKnowledgeBaseId());
         document.markPending();
-        cacheInvalidationService.evictDocumentCaches(currentUser.id(), document.getKnowledgeBaseId(), documentId);
+        operationLogService.record(
+                currentUser.id(),
+                OperationAction.DOCUMENT_REPROCESS,
+                OperationResourceType.DOCUMENT,
+                documentId);
+        cacheInvalidationService.evictAllDocumentCaches();
         return DocumentStatusResponse.from(document);
     }
 
     @Transactional
     public void delete(CurrentUser currentUser, Long documentId) {
-        Document document = findDocumentMine(currentUser, documentId);
-        KnowledgeBase knowledgeBase = ensureKnowledgeBaseMine(currentUser, document.getKnowledgeBaseId());
+        Document document = findDocument(documentId);
+        KnowledgeBaseAccess access =
+                knowledgeBaseAccessService.requireWritable(currentUser, document.getKnowledgeBaseId());
+        KnowledgeBase knowledgeBase = access.knowledgeBase();
 
         documentRepository.delete(document);
         knowledgeBase.decreaseDocumentCount();
         deleteStoredFile(document.getFilePath());
-        cacheInvalidationService.evictKnowledgeBaseCaches(currentUser.id(), document.getKnowledgeBaseId());
-        cacheInvalidationService.evictDocumentCaches(currentUser.id(), document.getKnowledgeBaseId(), documentId);
+        operationLogService.record(
+                currentUser.id(),
+                OperationAction.DOCUMENT_DELETE,
+                OperationResourceType.DOCUMENT,
+                documentId);
+        cacheInvalidationService.evictAllKnowledgeBaseCaches();
+        cacheInvalidationService.evictAllDocumentCaches();
     }
 
-    private KnowledgeBase ensureKnowledgeBaseMine(CurrentUser currentUser, Long knowledgeBaseId) {
-        return knowledgeBaseRepository.findByIdAndUserId(knowledgeBaseId, currentUser.id())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "知识库不存在"));
-    }
-
-    private Document findDocumentMine(CurrentUser currentUser, Long documentId) {
-        return documentRepository.findByIdAndUserId(documentId, currentUser.id())
+    private Document findDocument(Long documentId) {
+        return documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "文档不存在"));
     }
 

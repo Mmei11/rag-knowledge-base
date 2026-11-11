@@ -6,16 +6,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.ragkb.admin.service.OperationLogService;
 import com.example.ragkb.common.cache.CacheInvalidationService;
 import com.example.ragkb.common.exception.BusinessException;
+import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.document.config.DocumentStorageProperties;
 import com.example.ragkb.document.dto.DocumentResponse;
 import com.example.ragkb.document.dto.DocumentStatusResponse;
 import com.example.ragkb.document.entity.Document;
 import com.example.ragkb.document.entity.DocumentStatus;
 import com.example.ragkb.document.repository.DocumentRepository;
+import com.example.ragkb.knowledgebase.dto.KnowledgeBaseAccess;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
-import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.knowledgebase.entity.KnowledgeBaseAccessRole;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.user.entity.UserRole;
 import java.nio.file.Files;
@@ -43,10 +47,13 @@ class DocumentServiceTests {
     private DocumentRepository documentRepository;
 
     @Mock
-    private KnowledgeBaseRepository knowledgeBaseRepository;
+    private KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     @Mock
     private CacheInvalidationService cacheInvalidationService;
+
+    @Mock
+    private OperationLogService operationLogService;
 
     @Test
     void shouldUploadDocumentAndSaveMetadata() {
@@ -58,7 +65,8 @@ class DocumentServiceTests {
                 "text/plain",
                 "Spring Boot notes".getBytes());
 
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
         when(documentRepository.saveAndFlush(any(Document.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -75,8 +83,8 @@ class DocumentServiceTests {
         ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
         verify(documentRepository).saveAndFlush(captor.capture());
         assertThat(Files.exists(Path.of(captor.getValue().getFilePath()))).isTrue();
-        verify(cacheInvalidationService).evictKnowledgeBaseCaches(1L, 10L);
-        verify(cacheInvalidationService).evictDocumentList(1L, 10L);
+        verify(cacheInvalidationService).evictAllKnowledgeBaseCaches();
+        verify(cacheInvalidationService).evictAllDocumentCaches();
     }
 
     @Test
@@ -87,7 +95,8 @@ class DocumentServiceTests {
                 "notes.txt",
                 "text/plain",
                 "Spring Boot notes".getBytes());
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "知识库不存在"));
 
         assertThatThrownBy(() -> service.upload(currentUser, 10L, file))
                 .isInstanceOf(BusinessException.class)
@@ -103,7 +112,8 @@ class DocumentServiceTests {
                 "virus.exe",
                 "application/octet-stream",
                 "bad".getBytes());
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
 
         assertThatThrownBy(() -> service.upload(currentUser, 10L, file))
                 .isInstanceOf(BusinessException.class)
@@ -127,15 +137,17 @@ class DocumentServiceTests {
         properties.setMaxSizeBytes(3);
         DocumentService service = new DocumentService(
                 documentRepository,
-                knowledgeBaseRepository,
+                knowledgeBaseAccessService,
                 properties,
-                cacheInvalidationService);
+                cacheInvalidationService,
+                operationLogService);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "notes.txt",
                 "text/plain",
                 "large".getBytes());
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
 
         assertThatThrownBy(() -> service.upload(currentUser, 10L, file))
                 .isInstanceOf(BusinessException.class)
@@ -147,8 +159,9 @@ class DocumentServiceTests {
         KnowledgeBase knowledgeBase = knowledgeBase(10L, 1L);
         Document document = document(100L, 10L, 1L, tempDir.resolve("notes.txt"));
         DocumentService service = service();
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
-        when(documentRepository.findByKnowledgeBaseIdAndUserIdOrderByCreatedAtDesc(10L, 1L))
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
+        when(documentRepository.findByKnowledgeBaseIdOrderByCreatedAtDesc(10L))
                 .thenReturn(List.of(document));
 
         List<DocumentResponse> responses = service.listByKnowledgeBase(currentUser, 10L);
@@ -162,7 +175,9 @@ class DocumentServiceTests {
     void shouldGetDocumentDetail() {
         Document document = document(100L, 10L, 1L, tempDir.resolve("notes.txt"));
         DocumentService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(10L, 1L), KnowledgeBaseAccessRole.OWNER));
 
         DocumentResponse response = service.getMine(currentUser, 100L);
 
@@ -175,20 +190,22 @@ class DocumentServiceTests {
         Document document = document(100L, 10L, 1L, tempDir.resolve("notes.txt"));
         document.markFailed("文档解析失败");
         DocumentService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(10L, 1L), KnowledgeBaseAccessRole.OWNER));
 
         DocumentStatusResponse response = service.reprocess(currentUser, 100L);
 
         assertThat(response.status()).isEqualTo(DocumentStatus.PENDING);
         assertThat(response.errorMessage()).isNull();
         assertThat(document.getStatus()).isEqualTo(DocumentStatus.PENDING);
-        verify(cacheInvalidationService).evictDocumentCaches(1L, 10L, 100L);
+        verify(cacheInvalidationService).evictAllDocumentCaches();
     }
 
     @Test
-    void shouldRejectOtherUsersDocument() {
+    void shouldRejectMissingDocument() {
         DocumentService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.empty());
+        when(documentRepository.findById(100L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getMine(currentUser, 100L))
                 .isInstanceOf(BusinessException.class)
@@ -203,24 +220,26 @@ class DocumentServiceTests {
         Files.writeString(filePath, "Spring Boot notes");
         Document document = document(100L, 10L, 1L, filePath);
         DocumentService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
 
         service.delete(currentUser, 100L);
 
         verify(documentRepository).delete(document);
         assertThat(knowledgeBase.getDocumentCount()).isZero();
         assertThat(Files.exists(filePath)).isFalse();
-        verify(cacheInvalidationService).evictKnowledgeBaseCaches(1L, 10L);
-        verify(cacheInvalidationService).evictDocumentCaches(1L, 10L, 100L);
+        verify(cacheInvalidationService).evictAllKnowledgeBaseCaches();
+        verify(cacheInvalidationService).evictAllDocumentCaches();
     }
 
     private DocumentService service() {
         return new DocumentService(
                 documentRepository,
-                knowledgeBaseRepository,
+                knowledgeBaseAccessService,
                 properties(),
-                cacheInvalidationService);
+                cacheInvalidationService,
+                operationLogService);
     }
 
     private DocumentStorageProperties properties() {

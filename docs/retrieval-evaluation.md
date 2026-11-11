@@ -203,10 +203,29 @@ cd backend
 
 单片段问题中 Recall@K 与 HitRate@K 数值相同；多片段问题中 Recall@K 会低于 HitRate@K，除非所有标注片段都被召回。当前评测集已包含多 chunk 用例，可以直接观察这一差异。
 
+## 102 条扩展评测集结果（2026-11-11）
+
+在原有 46 条 hardened 集基础上，从知识库真实 chunk 中补充 56 条用例，总规模达到 102 条：
+原文措辞 42、同义改写 18、跨语言 14、多片段 11、难负例 10、元数据过滤 7；
+简单 19、中等 37、困难 46。新增用例覆盖食品安全法、GB14881、FDA Food Code 和食源性疾病操作要点。
+
+| 指标 | none | qwen3-rerank | 变化 |
+|---|---:|---:|---:|
+| Hit@1 | 0.6176 | 0.7451 | +12.75pp |
+| Hit@5 | 0.8627 | 0.9608 | +9.81pp |
+| Recall@5 | 0.8431 | 0.9363 | +9.32pp |
+| nDCG@10 | 0.7701 | 0.8553 | +8.52pp |
+| MRR@10 | 0.7294 | 0.8366 | +10.72pp |
+| 平均检索耗时 | 557ms | 830ms | +273ms |
+
+- 跨语言 Hit@5 0.5714 → 0.9286，同义改写 Hit@5 0.8889 → 1.0000，难负例 Hit@5 0.8000 → 1.0000。
+- 多片段 Recall@5 0.7273 → 0.6818，说明 rerank 在跨片段答案上仍会丢召回，是后续 query 改写/候选池扩展的重点。
+- 报告：`backend/target/retrieval-eval-102-none/` 与 `backend/target/retrieval-eval-102-rerank/`。
+
 ## 注意事项
 
 1. **Embedding 必须与建库时一致**。如果文档是用 Qwen 向量化的，评测也必须用同一个 Qwen embedding 模型；否则向量空间不可比，指标没有意义。
 2. **Mock embedding 不能用于质量评测**。`MockEmbeddingService` 基于文本哈希生成随机向量，只适合验证链路能否跑通。
 3. **当前 baseline 仍有提升空间**。评测集已覆盖原文、同义改写、跨语言、多 chunk、难负例和过滤六类问题，但仍可继续补充无答案问题和更口语化的对抗样本。
 4. **chunk 标签依赖切块策略**。如果调整 `TextChunker` 的 chunk size / overlap，需要重新标注 `fileName#chunkIndex`。
-5. **评测会真实调用 embedding API**，46 条问题约消耗 46 次 embedding 请求，注意额度与耗时。
+5. **评测会真实调用 embedding API**，102 条问题约消耗 102 次 embedding 请求，注意额度与耗时。

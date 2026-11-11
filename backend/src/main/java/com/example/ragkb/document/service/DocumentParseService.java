@@ -15,6 +15,7 @@ import com.example.ragkb.document.parser.ParsedPage;
 import com.example.ragkb.document.repository.DocumentChunkEmbeddingRepository;
 import com.example.ragkb.document.repository.DocumentChunkRepository;
 import com.example.ragkb.document.repository.DocumentRepository;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.rag.model.EmbeddingService;
 import com.example.ragkb.rag.model.EmbeddingVector;
 import com.example.ragkb.security.CurrentUser;
@@ -37,6 +38,7 @@ public class DocumentParseService {
     private final EmbeddingService embeddingService;
     private final DocumentProgressService documentProgressService;
     private final ChineseTextSegmenter textSegmenter;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     public DocumentParseService(
             DocumentRepository documentRepository,
@@ -46,7 +48,8 @@ public class DocumentParseService {
             TextChunker textChunker,
             EmbeddingService embeddingService,
             DocumentProgressService documentProgressService,
-            ChineseTextSegmenter textSegmenter) {
+            ChineseTextSegmenter textSegmenter,
+            KnowledgeBaseAccessService knowledgeBaseAccessService) {
         this.documentRepository = documentRepository;
         this.documentChunkRepository = documentChunkRepository;
         this.documentChunkEmbeddingRepository = documentChunkEmbeddingRepository;
@@ -55,11 +58,13 @@ public class DocumentParseService {
         this.embeddingService = embeddingService;
         this.documentProgressService = documentProgressService;
         this.textSegmenter = textSegmenter;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
     }
 
     public DocumentParseResponse parse(CurrentUser currentUser, Long documentId) {
-        Document document = documentRepository.findByIdAndUserId(documentId, currentUser.id())
+        Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "文档不存在"));
+        knowledgeBaseAccessService.requireWritable(currentUser, document.getKnowledgeBaseId());
         return parse(document);
     }
 

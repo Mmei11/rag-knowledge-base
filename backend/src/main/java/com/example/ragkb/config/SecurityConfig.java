@@ -3,6 +3,7 @@ package com.example.ragkb.config;
 import com.example.ragkb.common.api.ApiResponse;
 import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.security.JwtAuthenticationFilter;
+import com.example.ragkb.security.RestAccessDeniedHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -26,25 +27,29 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            RestAccessDeniedHandler restAccessDeniedHandler,
             ObjectMapper objectMapper) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, ex) -> {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.setCharacterEncoding("UTF-8");
-                    objectMapper.writeValue(
-                            response.getWriter(),
-                            ApiResponse.error(
-                                    ErrorCode.UNAUTHORIZED.getCode(),
-                                    ErrorCode.UNAUTHORIZED.getMessage()));
-                }))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, ex) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
+                            objectMapper.writeValue(
+                                    response.getWriter(),
+                                    ApiResponse.error(
+                                            ErrorCode.UNAUTHORIZED.getCode(),
+                                            ErrorCode.UNAUTHORIZED.getMessage()));
+                        })
+                        .accessDeniedHandler(restAccessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .httpBasic(AbstractHttpConfigurer::disable)

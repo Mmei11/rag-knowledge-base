@@ -1,5 +1,6 @@
 package com.example.ragkb.security;
 
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -8,12 +9,15 @@ import com.example.ragkb.common.api.ApiResponse;
 import com.example.ragkb.config.CorsConfig;
 import com.example.ragkb.config.SecurityConfig;
 import com.example.ragkb.user.entity.User;
+import com.example.ragkb.user.repository.UserRepository;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
         SecurityConfig.class,
         CorsConfig.class,
         JwtAuthenticationFilter.class,
+        RestAccessDeniedHandler.class,
         JwtTokenProvider.class
 })
 @TestPropertySource(properties = {
@@ -41,6 +46,9 @@ class SecurityConfigTests {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    @MockitoBean
+    private UserRepository userRepository;
+
     @Test
     void shouldRejectProtectedRequestWithoutToken() throws Exception {
         mockMvc.perform(get("/api/protected/me"))
@@ -54,12 +62,26 @@ class SecurityConfigTests {
         User user = new User("alice", "encoded-password", "Alice");
         ReflectionTestUtils.setField(user, "id", 1L);
         String token = jwtTokenProvider.generateToken(user);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         mockMvc.perform(get("/api/protected/me")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data").value("alice"));
+    }
+
+    @Test
+    void shouldRejectDisabledUserWithValidToken() throws Exception {
+        User user = new User("alice", "encoded-password", "Alice");
+        ReflectionTestUtils.setField(user, "id", 1L);
+        user.disable();
+        String token = jwtTokenProvider.generateToken(user);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        mockMvc.perform(get("/api/protected/me")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isUnauthorized());
     }
 
     @RestController

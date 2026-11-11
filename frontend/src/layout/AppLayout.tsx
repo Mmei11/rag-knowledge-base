@@ -18,6 +18,9 @@ export function AppLayout() {
         <nav className="topnav" aria-label="主导航">
           <NavLink to="/knowledge-bases">知识库</NavLink>
           <NavLink to="/chat">智能问答</NavLink>
+          {session?.user.role !== 'USER' && (
+            <NavLink to="/admin">管理后台</NavLink>
+          )}
         </nav>
 
         <button className="ghost-button" type="button" onClick={signOut}>

@@ -6,12 +6,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.ragkb.admin.service.OperationLogService;
 import com.example.ragkb.common.cache.CacheInvalidationService;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.knowledgebase.dto.CreateKnowledgeBaseRequest;
+import com.example.ragkb.knowledgebase.dto.KnowledgeBaseAccess;
 import com.example.ragkb.knowledgebase.dto.KnowledgeBaseResponse;
 import com.example.ragkb.knowledgebase.dto.UpdateKnowledgeBaseRequest;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
+import com.example.ragkb.knowledgebase.entity.KnowledgeBaseAccessRole;
+import com.example.ragkb.knowledgebase.repository.KnowledgeBaseMemberRepository;
 import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.user.entity.UserRole;
@@ -33,7 +37,16 @@ class KnowledgeBaseServiceTests {
     private KnowledgeBaseRepository knowledgeBaseRepository;
 
     @Mock
+    private KnowledgeBaseMemberRepository knowledgeBaseMemberRepository;
+
+    @Mock
+    private KnowledgeBaseAccessService knowledgeBaseAccessService;
+
+    @Mock
     private CacheInvalidationService cacheInvalidationService;
+
+    @Mock
+    private OperationLogService operationLogService;
 
     @Test
     void shouldCreateKnowledgeBase() {
@@ -72,8 +85,9 @@ class KnowledgeBaseServiceTests {
     void shouldListCurrentUserKnowledgeBases() {
         KnowledgeBaseService service = service();
         KnowledgeBase knowledgeBase = knowledgeBase(10L, 1L, "Java Notes", null);
-        when(knowledgeBaseRepository.findByUserIdOrderByUpdatedAtDesc(1L))
+        when(knowledgeBaseRepository.findAccessibleByUserId(1L))
                 .thenReturn(List.of(knowledgeBase));
+        when(knowledgeBaseMemberRepository.findByUserId(1L)).thenReturn(List.of());
 
         List<KnowledgeBaseResponse> responses = service.listMine(currentUser);
 
@@ -85,7 +99,9 @@ class KnowledgeBaseServiceTests {
     @Test
     void shouldRejectOtherUsersKnowledgeBase() {
         KnowledgeBaseService service = service();
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenThrow(new BusinessException(
+                        com.example.ragkb.common.exception.ErrorCode.RESOURCE_NOT_FOUND, "知识库不存在"));
 
         assertThatThrownBy(() -> service.getMine(currentUser, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -96,7 +112,8 @@ class KnowledgeBaseServiceTests {
     void shouldUpdateKnowledgeBase() {
         KnowledgeBaseService service = service();
         KnowledgeBase knowledgeBase = knowledgeBase(10L, 1L, "Old Name", null);
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
+        when(knowledgeBaseAccessService.requireOwner(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
         when(knowledgeBaseRepository.existsByUserIdAndNameAndIdNot(1L, "New Name", 10L)).thenReturn(false);
         when(knowledgeBaseRepository.saveAndFlush(knowledgeBase)).thenReturn(knowledgeBase);
 
@@ -107,23 +124,30 @@ class KnowledgeBaseServiceTests {
 
         assertThat(response.name()).isEqualTo("New Name");
         assertThat(response.description()).isEqualTo("Updated");
-        verify(cacheInvalidationService).evictKnowledgeBaseCaches(1L, 10L);
+        verify(cacheInvalidationService).evictAllKnowledgeBaseCaches();
     }
 
     @Test
     void shouldDeleteKnowledgeBase() {
         KnowledgeBaseService service = service();
         KnowledgeBase knowledgeBase = knowledgeBase(10L, 1L, "Java Notes", null);
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase));
+        when(knowledgeBaseAccessService.requireOwner(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase, KnowledgeBaseAccessRole.OWNER));
 
         service.delete(currentUser, 10L);
 
         verify(knowledgeBaseRepository).delete(knowledgeBase);
-        verify(cacheInvalidationService).evictKnowledgeBaseCaches(1L, 10L);
+        verify(cacheInvalidationService).evictAllKnowledgeBaseCaches();
+        verify(cacheInvalidationService).evictAllDocumentCaches();
     }
 
     private KnowledgeBaseService service() {
-        return new KnowledgeBaseService(knowledgeBaseRepository, cacheInvalidationService);
+        return new KnowledgeBaseService(
+                knowledgeBaseRepository,
+                knowledgeBaseMemberRepository,
+                knowledgeBaseAccessService,
+                cacheInvalidationService,
+                operationLogService);
     }
 
     private KnowledgeBase knowledgeBase(Long id, Long userId, String name, String description) {

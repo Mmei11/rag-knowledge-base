@@ -16,7 +16,9 @@ import com.example.ragkb.rag.dto.VectorSearchResponse;
 import com.example.ragkb.rag.service.RagRetrievalService;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.security.JwtAuthenticationFilter;
+import com.example.ragkb.security.RestAccessDeniedHandler;
 import com.example.ragkb.security.JwtTokenProvider;
+import com.example.ragkb.user.repository.UserRepository;
 import com.example.ragkb.user.entity.UserRole;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = RagSearchController.class)
-@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class})
+@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class, RestAccessDeniedHandler.class})
 @TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:5173")
 class RagSearchControllerTests {
 
@@ -45,6 +47,9 @@ class RagSearchControllerTests {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void shouldSearchVector() throws Exception {

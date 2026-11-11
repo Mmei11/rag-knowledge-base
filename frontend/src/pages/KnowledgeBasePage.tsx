@@ -3,9 +3,16 @@ import type { FormEvent } from 'react'
 import { ApiError, knowledgeBaseApi } from '../api/http'
 import { useAuth } from '../auth/useAuth'
 import { DocumentPanel } from '../components/DocumentPanel'
+import { KnowledgeBaseMemberDialog } from '../components/KnowledgeBaseMemberDialog'
 import { StatusMessage } from '../components/StatusMessage'
-import type { KnowledgeBaseResponse } from '../types/api'
+import type { KnowledgeBaseResponse, KnowledgeBaseRole } from '../types/api'
 import { formatDateTime } from '../utils/date'
+
+const knowledgeBaseRoleLabels: Record<KnowledgeBaseRole, string> = {
+  OWNER: '所有者',
+  EDITOR: '可编辑',
+  VIEWER: '只读',
+}
 
 type KnowledgeBaseForm = {
   name: string
@@ -44,6 +51,7 @@ export function KnowledgeBasePage() {
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseResponse[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -52,6 +60,14 @@ export function KnowledgeBasePage() {
     () => knowledgeBases.find((item) => item.id === selectedId) ?? null,
     [knowledgeBases, selectedId],
   )
+
+  const canWrite =
+    selectedKnowledgeBase?.role === 'OWNER' ||
+    selectedKnowledgeBase?.role === 'EDITOR'
+
+  useEffect(() => {
+    setMemberDialogOpen(false)
+  }, [selectedId])
 
   useEffect(() => {
     if (!session) {
@@ -213,7 +229,9 @@ export function KnowledgeBasePage() {
               onClick={() => setSelectedId(item.id)}
             >
               <span>{item.name}</span>
-              <small>{item.documentCount} 个文档</small>
+              <small>
+                {item.documentCount} 个文档 · {knowledgeBaseRoleLabels[item.role]}
+              </small>
             </button>
           ))}
 
@@ -231,24 +249,40 @@ export function KnowledgeBasePage() {
             <div className="detail-header">
               <div>
                 <p className="eyebrow">知识库详情</p>
-                <h2>{selectedKnowledgeBase.name}</h2>
+                <div className="detail-title">
+                  <h2>{selectedKnowledgeBase.name}</h2>
+                  <span
+                    className={`role-badge ${selectedKnowledgeBase.role.toLowerCase()}`}
+                  >
+                    {knowledgeBaseRoleLabels[selectedKnowledgeBase.role]}
+                  </span>
+                </div>
               </div>
-              <div className="detail-actions">
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => startEdit(selectedKnowledgeBase)}
-                >
-                  编辑
-                </button>
-                <button
-                  className="danger-button"
-                  type="button"
-                  onClick={() => void handleDelete(selectedKnowledgeBase)}
-                >
-                  删除
-                </button>
-              </div>
+              {selectedKnowledgeBase.role === 'OWNER' && (
+                <div className="detail-actions">
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => setMemberDialogOpen(true)}
+                  >
+                    成员管理
+                  </button>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => startEdit(selectedKnowledgeBase)}
+                  >
+                    编辑
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => void handleDelete(selectedKnowledgeBase)}
+                  >
+                    删除
+                  </button>
+                </div>
+              )}
             </div>
 
             <dl className="metadata-grid">
@@ -271,9 +305,23 @@ export function KnowledgeBasePage() {
               <p>{selectedKnowledgeBase.description || '未填写描述'}</p>
             </section>
 
+            {selectedKnowledgeBase.role === 'VIEWER' && (
+              <p className="readonly-hint">
+                你是该知识库的只读成员，可以查看文档、检索和聊天，但不能修改内容。
+              </p>
+            )}
+
             <DocumentPanel
               knowledgeBaseId={selectedKnowledgeBase.id}
+              canWrite={canWrite}
               onKnowledgeBaseChanged={loadKnowledgeBases}
+            />
+
+            <KnowledgeBaseMemberDialog
+              knowledgeBaseId={selectedKnowledgeBase.id}
+              open={memberDialogOpen}
+              onClose={() => setMemberDialogOpen(false)}
+              onMembersChanged={loadKnowledgeBases}
             />
 
             {editingId === selectedKnowledgeBase.id && (

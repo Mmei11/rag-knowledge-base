@@ -1,5 +1,8 @@
 package com.example.ragkb.user.service;
 
+import com.example.ragkb.admin.model.OperationAction;
+import com.example.ragkb.admin.model.OperationResourceType;
+import com.example.ragkb.admin.service.OperationLogService;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.security.JwtTokenProvider;
@@ -21,14 +24,17 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final OperationLogService operationLogService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtTokenProvider jwtTokenProvider) {
+            JwtTokenProvider jwtTokenProvider,
+            OperationLogService operationLogService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.operationLogService = operationLogService;
     }
 
     @Transactional
@@ -43,13 +49,19 @@ public class AuthService {
         User user = new User(username, passwordHash, normalizeNickname(request.nickname()));
 
         try {
-            return UserResponse.from(userRepository.saveAndFlush(user));
+            User saved = userRepository.saveAndFlush(user);
+            operationLogService.record(
+                    saved.getId(),
+                    OperationAction.USER_REGISTER,
+                    OperationResourceType.USER,
+                    saved.getId());
+            return UserResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
             throw new BusinessException(ErrorCode.RESOURCE_CONFLICT, "用户名已存在");
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         String username = request.username().trim();
         User user = userRepository.findByUsername(username)
@@ -64,6 +76,11 @@ public class AuthService {
         }
 
         String token = jwtTokenProvider.generateToken(user);
+        operationLogService.record(
+                user.getId(),
+                OperationAction.USER_LOGIN,
+                OperationResourceType.USER,
+                user.getId());
         return LoginResponse.bearer(
                 token,
                 jwtTokenProvider.expirationSeconds(),

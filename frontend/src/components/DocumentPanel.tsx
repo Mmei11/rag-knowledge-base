@@ -10,6 +10,7 @@ const ALLOWED_EXTENSIONS = ['pdf', 'txt', 'md', 'markdown', 'docx', 'xlsx']
 
 type DocumentPanelProps = {
   knowledgeBaseId: number
+  canWrite: boolean
   onKnowledgeBaseChanged: () => Promise<void>
 }
 
@@ -62,6 +63,7 @@ function validateFile(file: File | null) {
 
 export function DocumentPanel({
   knowledgeBaseId,
+  canWrite,
   onKnowledgeBaseChanged,
 }: DocumentPanelProps) {
   const [documents, setDocuments] = useState<DocumentResponse[]>([])
@@ -223,20 +225,22 @@ export function DocumentPanel({
         <span>{documents.length}</span>
       </div>
 
-      <form className="upload-form" onSubmit={handleUpload}>
-        <label>
-          上传文档
-          <input
-            accept=".pdf,.txt,.md,.markdown,.docx,.xlsx"
-            className="file-input"
-            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-            type="file"
-          />
-        </label>
-        <button className="primary-button" disabled={loading} type="submit">
-          上传并解析
-        </button>
-      </form>
+      {canWrite && (
+        <form className="upload-form" onSubmit={handleUpload}>
+          <label>
+            上传文档
+            <input
+              accept=".pdf,.txt,.md,.markdown,.docx,.xlsx"
+              className="file-input"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+              type="file"
+            />
+          </label>
+          <button className="primary-button" disabled={loading} type="submit">
+            上传并解析
+          </button>
+        </form>
+      )}
 
       {uploadProgress !== null && (
         <div className="upload-progress" aria-label="上传进度">
@@ -286,26 +290,28 @@ export function DocumentPanel({
               </div>
             )}
 
-            <div className="document-actions">
-              {!isProcessing(document.status) && (
+            {canWrite && (
+              <div className="document-actions">
+                {!isProcessing(document.status) && (
+                  <button
+                    className="ghost-button"
+                    disabled={loading}
+                    onClick={() => void handleReprocess(document)}
+                    type="button"
+                  >
+                    重新解析
+                  </button>
+                )}
                 <button
-                  className="ghost-button"
+                  className="danger-button"
                   disabled={loading}
-                  onClick={() => void handleReprocess(document)}
+                  onClick={() => void handleDelete(document)}
                   type="button"
                 >
-                  重新解析
+                  删除
                 </button>
-              )}
-              <button
-                className="danger-button"
-                disabled={loading}
-                onClick={() => void handleDelete(document)}
-                type="button"
-              >
-                删除
-              </button>
-            </div>
+              </div>
+            )}
           </article>
         ))}
 

@@ -19,7 +19,7 @@ import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.common.ratelimit.RateLimitService;
 import com.example.ragkb.document.entity.DocumentStatus;
 import com.example.ragkb.document.repository.DocumentRepository;
-import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
 import com.example.ragkb.rag.dto.VectorSearchRequest;
 import com.example.ragkb.rag.dto.VectorSearchResponse;
@@ -41,7 +41,7 @@ public class ChatService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
-    private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final DocumentRepository documentRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -52,7 +52,7 @@ public class ChatService {
     private final RateLimitService rateLimitService;
 
     public ChatService(
-            KnowledgeBaseRepository knowledgeBaseRepository,
+            KnowledgeBaseAccessService knowledgeBaseAccessService,
             DocumentRepository documentRepository,
             ChatSessionRepository chatSessionRepository,
             ChatMessageRepository chatMessageRepository,
@@ -61,7 +61,7 @@ public class ChatService {
             PromptBuilder promptBuilder,
             ChatModelService chatModelService,
             RateLimitService rateLimitService) {
-        this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.documentRepository = documentRepository;
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
@@ -74,8 +74,7 @@ public class ChatService {
 
     @Transactional
     public ChatSessionResponse createSession(CurrentUser currentUser, CreateChatSessionRequest request) {
-        knowledgeBaseRepository.findByIdAndUserId(request.knowledgeBaseId(), currentUser.id())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Knowledge base not found"));
+        knowledgeBaseAccessService.requireVisible(currentUser, request.knowledgeBaseId());
 
         ChatSession session = new ChatSession(
                 currentUser.id(),
@@ -117,7 +116,7 @@ public class ChatService {
     public List<String> suggestQuestions(CurrentUser currentUser, Long sessionId) {
         ChatSession session = findSession(currentUser, sessionId);
         List<String> titles = documentRepository
-                .findByKnowledgeBaseIdAndUserIdOrderByCreatedAtDesc(session.getKnowledgeBaseId(), currentUser.id())
+                .findByKnowledgeBaseIdOrderByCreatedAtDesc(session.getKnowledgeBaseId())
                 .stream()
                 .filter(document -> document.getStatus() == DocumentStatus.COMPLETED)
                 .map(document -> document.getFileName().replaceFirst("\\.[^.]+$", ""))
@@ -125,8 +124,9 @@ public class ChatService {
                 .limit(3)
                 .toList();
         if (titles.isEmpty()) {
-            String name = knowledgeBaseRepository.findByIdAndUserId(session.getKnowledgeBaseId(), currentUser.id())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Knowledge base not found"))
+            String name = knowledgeBaseAccessService
+                    .requireVisible(currentUser, session.getKnowledgeBaseId())
+                    .knowledgeBase()
                     .getName();
             return List.of("“" + name + "”主要包含哪些内容？", "“" + name + "”有哪些核心概念？", "如何开始学习“" + name + "”？");
         }

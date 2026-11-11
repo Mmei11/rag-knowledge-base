@@ -10,10 +10,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.ragkb.common.exception.BusinessException;
+import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.repository.DocumentRepository;
+import com.example.ragkb.knowledgebase.dto.KnowledgeBaseAccess;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
-import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.knowledgebase.entity.KnowledgeBaseAccessRole;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.rag.config.RerankProperties;
 import com.example.ragkb.rag.config.RetrievalProperties;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
@@ -43,7 +46,7 @@ class RagRetrievalServiceTests {
     private final CurrentUser currentUser = new CurrentUser(1L, "alice", UserRole.USER);
 
     @Mock
-    private KnowledgeBaseRepository knowledgeBaseRepository;
+    private KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     @Mock
     private DocumentRepository documentRepository;
@@ -59,7 +62,8 @@ class RagRetrievalServiceTests {
         RagRetrievalService service = service();
         EmbeddingVector queryEmbedding = new EmbeddingVector(List.of(0.1, 0.2));
         RetrievedChunkResponse item = new RetrievedChunkResponse(200L, 100L, 0, "Spring Boot notes", 0.87);
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
         when(embeddingService.embedText("Spring Boot")).thenReturn(queryEmbedding);
         when(ragRetrievalRepository.searchSimilarChunks(
                 eq(10L), eq(queryEmbedding), eq(15), eq(0.35), any(RetrievalFilters.class)))
@@ -87,7 +91,8 @@ class RagRetrievalServiceTests {
         RetrievedChunkResponse vectorFirst = new RetrievedChunkResponse(200L, 100L, 0, "Spring Boot notes", 0.87);
         RetrievedChunkResponse shared = new RetrievedChunkResponse(201L, 100L, 1, "Spring transaction notes", 0.82);
         RetrievedChunkResponse keywordOnly = new RetrievedChunkResponse(202L, 100L, 2, "Transaction annotations", 0.62);
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
         when(embeddingService.embedText("Spring transaction")).thenReturn(queryEmbedding);
         when(ragRetrievalRepository.searchSimilarChunks(
                 eq(10L), eq(queryEmbedding), eq(9), eq(0.35), any(RetrievalFilters.class)))
@@ -109,7 +114,8 @@ class RagRetrievalServiceTests {
         RagRetrievalService service = service();
         EmbeddingVector queryEmbedding = new EmbeddingVector(List.of(0.1, 0.2));
         RetrievedChunkResponse keywordOnly = new RetrievedChunkResponse(202L, 100L, 2, "Transaction annotations", 0.34);
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
         when(embeddingService.embedText("transaction annotation")).thenReturn(queryEmbedding);
         when(ragRetrievalRepository.searchSimilarChunks(
                 eq(10L), eq(queryEmbedding), eq(9), eq(0.35), any(RetrievalFilters.class)))
@@ -131,8 +137,9 @@ class RagRetrievalServiceTests {
         EmbeddingVector queryEmbedding = new EmbeddingVector(List.of(0.1, 0.2));
         RetrievalFilters filters = new RetrievalFilters(
                 List.of(100L), LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 20));
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
-        when(documentRepository.countByIdInAndKnowledgeBaseIdAndUserId(List.of(100L), 10L, 1L)).thenReturn(1L);
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
+        when(documentRepository.countByIdInAndKnowledgeBaseId(List.of(100L), 10L)).thenReturn(1L);
         when(embeddingService.embedText("Spring Boot")).thenReturn(queryEmbedding);
         when(ragRetrievalRepository.searchSimilarChunks(10L, queryEmbedding, 9, 0.35, filters))
                 .thenReturn(List.of());
@@ -151,14 +158,15 @@ class RagRetrievalServiceTests {
                         LocalDate.of(2026, 9, 20)));
 
         verify(ragRetrievalRepository).searchSimilarChunks(10L, queryEmbedding, 9, 0.35, filters);
-        verify(documentRepository).countByIdInAndKnowledgeBaseIdAndUserId(List.of(100L), 10L, 1L);
+        verify(documentRepository).countByIdInAndKnowledgeBaseId(List.of(100L), 10L);
     }
 
     @Test
     void shouldRejectDocumentThatDoesNotBelongToCurrentKnowledgeBase() {
         RagRetrievalService service = service();
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
-        when(documentRepository.countByIdInAndKnowledgeBaseIdAndUserId(List.of(200L), 10L, 1L)).thenReturn(0L);
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
+        when(documentRepository.countByIdInAndKnowledgeBaseId(List.of(200L), 10L)).thenReturn(0L);
 
         assertThatThrownBy(() -> service.search(
                 currentUser,
@@ -171,7 +179,8 @@ class RagRetrievalServiceTests {
     @Test
     void shouldRejectOtherUsersKnowledgeBase() {
         RagRetrievalService service = service();
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "知识库不存在"));
 
         assertThatThrownBy(() -> service.search(
                 currentUser,
@@ -186,7 +195,8 @@ class RagRetrievalServiceTests {
         RetrievedChunkResponse first = new RetrievedChunkResponse(1L, 100L, 0, "first", 0.90);
         RetrievedChunkResponse second = new RetrievedChunkResponse(2L, 100L, 1, "second", 0.80);
         RetrievedChunkResponse third = new RetrievedChunkResponse(3L, 100L, 2, "third", 0.70);
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
         when(embeddingService.embedText("Spring Boot")).thenReturn(queryEmbedding);
         when(ragRetrievalRepository.searchSimilarChunks(
                 eq(10L), eq(queryEmbedding), eq(6), eq(0.35), any(RetrievalFilters.class)))
@@ -214,7 +224,8 @@ class RagRetrievalServiceTests {
                 new RetrievedChunkResponse(3L, 100L, 2, "three", 0.80),
                 new RetrievedChunkResponse(4L, 100L, 3, "four", 0.75),
                 new RetrievedChunkResponse(5L, 100L, 4, "five", 0.70));
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
         when(embeddingService.embedText("Spring Boot")).thenReturn(queryEmbedding);
         when(ragRetrievalRepository.searchSimilarChunks(
                 eq(10L), eq(queryEmbedding), eq(3), eq(0.35), any(RetrievalFilters.class)))
@@ -246,7 +257,7 @@ class RagRetrievalServiceTests {
 
     private RagRetrievalService service(RerankService rerankService, RerankProperties rerankProperties) {
         return new RagRetrievalService(
-                knowledgeBaseRepository,
+                knowledgeBaseAccessService,
                 documentRepository,
                 embeddingService,
                 ragRetrievalRepository,

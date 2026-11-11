@@ -41,10 +41,28 @@ public class CacheInvalidationService {
         evictDocument(userId, documentId);
     }
 
+    public void evictAllKnowledgeBaseCaches() {
+        clear(CacheNames.KNOWLEDGE_BASE_LIST);
+        clear(CacheNames.KNOWLEDGE_BASE_DETAIL);
+    }
+
+    public void evictAllDocumentCaches() {
+        clear(CacheNames.DOCUMENT_LIST);
+        clear(CacheNames.DOCUMENT_DETAIL);
+        clear(CacheNames.DOCUMENT_STATUS);
+    }
+
     private void evict(String cacheName, String key) {
         Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
             cache.evict(key);
+        }
+    }
+
+    private void clear(String cacheName) {
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
         }
     }
 }

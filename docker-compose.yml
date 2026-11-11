@@ -87,6 +87,7 @@ services:
       RERANK_MAX_DOCUMENT_CHARS: ${RERANK_MAX_DOCUMENT_CHARS:-2000}
       SEARCH_TEXT_BACKFILL_ENABLED: ${SEARCH_TEXT_BACKFILL_ENABLED:-false}
       SEARCH_TEXT_BACKFILL_BATCH_SIZE: ${SEARCH_TEXT_BACKFILL_BATCH_SIZE:-500}
+      ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_BOOTSTRAP_USERNAME:-}
       # The host uses a local proxy. Containers cannot reach 127.0.0.1 on the
       # host directly, so use Docker Desktop's host gateway for Qwen/OpenAI.
       HTTP_PROXY: ${HTTP_PROXY:-http://host.docker.internal:12450}

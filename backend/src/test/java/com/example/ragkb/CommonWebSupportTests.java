@@ -16,7 +16,9 @@ import com.example.ragkb.common.page.PageResponse;
 import com.example.ragkb.config.CorsConfig;
 import com.example.ragkb.config.SecurityConfig;
 import com.example.ragkb.security.JwtAuthenticationFilter;
+import com.example.ragkb.security.RestAccessDeniedHandler;
 import com.example.ragkb.security.JwtTokenProvider;
+import com.example.ragkb.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotBlank;
@@ -44,7 +46,8 @@ import org.springframework.web.bind.annotation.RestController;
         GlobalExceptionHandler.class,
         CorsConfig.class,
         SecurityConfig.class,
-        JwtAuthenticationFilter.class
+        JwtAuthenticationFilter.class,
+        RestAccessDeniedHandler.class
 })
 @TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:5173")
 class CommonWebSupportTests {
@@ -57,6 +60,9 @@ class CommonWebSupportTests {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     @WithMockUser

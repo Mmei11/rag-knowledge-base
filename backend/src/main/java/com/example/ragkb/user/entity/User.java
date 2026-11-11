@@ -99,4 +99,12 @@ public class User {
     public void disable() {
         status = UserStatus.DISABLED;
     }
+
+    public void enable() {
+        status = UserStatus.ENABLED;
+    }
+
+    public void changeRole(UserRole role) {
+        this.role = role;
+    }
 }

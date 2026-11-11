@@ -22,11 +22,14 @@ import com.example.ragkb.chat.repository.ChatSessionRepository;
 import com.example.ragkb.chat.repository.MessageReferenceRepository;
 import com.example.ragkb.chat.repository.MessageReferenceDetail;
 import com.example.ragkb.common.exception.BusinessException;
+import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.common.ratelimit.RateLimitService;
 import com.example.ragkb.document.repository.DocumentRepository;
 import com.example.ragkb.document.entity.Document;
+import com.example.ragkb.knowledgebase.dto.KnowledgeBaseAccess;
 import com.example.ragkb.knowledgebase.entity.KnowledgeBase;
-import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.knowledgebase.entity.KnowledgeBaseAccessRole;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.rag.dto.RetrievedChunkResponse;
 import com.example.ragkb.rag.dto.VectorSearchRequest;
 import com.example.ragkb.rag.dto.VectorSearchResponse;
@@ -53,7 +56,7 @@ class ChatServiceTests {
     private final CurrentUser currentUser = new CurrentUser(1L, "alice", UserRole.USER);
 
     @Mock
-    private KnowledgeBaseRepository knowledgeBaseRepository;
+    private KnowledgeBaseAccessService knowledgeBaseAccessService;
 
     @Mock
     private DocumentRepository documentRepository;
@@ -82,7 +85,8 @@ class ChatServiceTests {
     @Test
     void shouldCreateSession() {
         ChatService service = service();
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(knowledgeBase()));
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenReturn(new KnowledgeBaseAccess(knowledgeBase(), KnowledgeBaseAccessRole.OWNER));
         when(chatSessionRepository.save(any(ChatSession.class))).thenAnswer(invocation -> {
             ChatSession session = invocation.getArgument(0);
             fillSession(session, 100L);
@@ -101,7 +105,8 @@ class ChatServiceTests {
     @Test
     void shouldRejectOtherUsersKnowledgeBaseWhenCreateSession() {
         ChatService service = service();
-        when(knowledgeBaseRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+        when(knowledgeBaseAccessService.requireVisible(currentUser, 10L))
+                .thenThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Knowledge base not found"));
 
         assertThatThrownBy(() -> service.createSession(
                 currentUser,
@@ -158,7 +163,7 @@ class ChatServiceTests {
         Document document = new Document(10L, 1L, "食品安全法.pdf", "pdf", 1024, "file.pdf");
         document.markCompleted();
         when(chatSessionRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(session()));
-        when(documentRepository.findByKnowledgeBaseIdAndUserIdOrderByCreatedAtDesc(10L, 1L))
+        when(documentRepository.findByKnowledgeBaseIdOrderByCreatedAtDesc(10L))
                 .thenReturn(List.of(document));
 
         assertThat(service.suggestQuestions(currentUser, 100L))
@@ -345,7 +350,7 @@ class ChatServiceTests {
 
     private ChatService service() {
         return new ChatService(
-                knowledgeBaseRepository,
+                knowledgeBaseAccessService,
                 documentRepository,
                 chatSessionRepository,
                 chatMessageRepository,

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.ragkb.common.exception.BusinessException;
+import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.chunk.TextChunker;
 import com.example.ragkb.document.dto.DocumentParseResponse;
@@ -22,6 +23,7 @@ import com.example.ragkb.document.parser.TextDocumentParser;
 import com.example.ragkb.document.repository.DocumentChunkEmbeddingRepository;
 import com.example.ragkb.document.repository.DocumentChunkRepository;
 import com.example.ragkb.document.repository.DocumentRepository;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.rag.model.EmbeddingService;
 import com.example.ragkb.rag.model.EmbeddingVector;
 import com.example.ragkb.security.CurrentUser;
@@ -66,13 +68,16 @@ class DocumentParseServiceTests {
     @Mock
     private DocumentProgressService documentProgressService;
 
+    @Mock
+    private KnowledgeBaseAccessService knowledgeBaseAccessService;
+
     @Test
     void shouldParseTextDocumentAndMarkCompleted() throws Exception {
         Path file = tempDir.resolve("notes.txt");
         Files.writeString(file, "Spring Boot notes");
         Document document = document(100L, 1L, "txt", file);
         DocumentParseService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
         when(documentChunkRepository.saveAllAndFlush(anyList())).thenAnswer(invocation -> withIds(invocation.getArgument(0)));
         when(embeddingService.embedBatch(anyList(), any()))
                 .thenReturn(List.of(new EmbeddingVector(List.of(0.1, 0.2))));
@@ -131,7 +136,7 @@ class DocumentParseServiceTests {
         }
         Document document = document(100L, 1L, "pdf", file);
         DocumentParseService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
         when(documentChunkRepository.saveAllAndFlush(anyList())).thenAnswer(invocation -> withIds(invocation.getArgument(0)));
         when(embeddingService.embedBatch(anyList(), any()))
                 .thenReturn(List.of(
@@ -160,7 +165,7 @@ class DocumentParseServiceTests {
         Files.writeString(file, "   ");
         Document document = document(100L, 1L, "txt", file);
         DocumentParseService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
 
         assertThatThrownBy(() -> service.parse(currentUser, 100L))
                 .isInstanceOf(BusinessException.class)
@@ -169,13 +174,16 @@ class DocumentParseServiceTests {
     }
 
     @Test
-    void shouldRejectOtherUsersDocument() {
+    void shouldRejectDocumentInInaccessibleKnowledgeBase() {
         DocumentParseService service = service();
-        when(documentRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.empty());
+        Document document = document(100L, 1L, "txt", tempDir.resolve("missing.txt"));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(document));
+        when(knowledgeBaseAccessService.requireWritable(currentUser, 10L))
+                .thenThrow(new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "知识库不存在"));
 
         assertThatThrownBy(() -> service.parse(currentUser, 100L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("文档不存在");
+                .hasMessage("知识库不存在");
     }
 
     private DocumentParseService service() {
@@ -191,7 +199,8 @@ class DocumentParseServiceTests {
                 new TextChunker(),
                 embeddingService,
                 documentProgressService,
-                new ChineseTextSegmenter());
+                new ChineseTextSegmenter(),
+                knowledgeBaseAccessService);
     }
 
     private List<DocumentChunk> withIds(List<DocumentChunk> chunks) {

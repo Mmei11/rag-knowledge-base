@@ -4,7 +4,7 @@ import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.common.exception.ErrorCode;
 import com.example.ragkb.common.text.ChineseTextSegmenter;
 import com.example.ragkb.document.repository.DocumentRepository;
-import com.example.ragkb.knowledgebase.repository.KnowledgeBaseRepository;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseAccessService;
 import com.example.ragkb.rag.config.RerankProperties;
 import com.example.ragkb.rag.config.RetrievalProperties;
 import com.example.ragkb.rag.dto.RetrievalFilters;
@@ -30,7 +30,7 @@ public class RagRetrievalService {
     private static final Logger log = LoggerFactory.getLogger(RagRetrievalService.class);
     private static final int RRF_RANKING_CONSTANT = 60;
 
-    private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final KnowledgeBaseAccessService knowledgeBaseAccessService;
     private final DocumentRepository documentRepository;
     private final EmbeddingService embeddingService;
     private final RagRetrievalRepository ragRetrievalRepository;
@@ -40,7 +40,7 @@ public class RagRetrievalService {
     private final ChineseTextSegmenter textSegmenter;
 
     public RagRetrievalService(
-            KnowledgeBaseRepository knowledgeBaseRepository,
+            KnowledgeBaseAccessService knowledgeBaseAccessService,
             DocumentRepository documentRepository,
             EmbeddingService embeddingService,
             RagRetrievalRepository ragRetrievalRepository,
@@ -48,7 +48,7 @@ public class RagRetrievalService {
             RerankService rerankService,
             RerankProperties rerankProperties,
             ChineseTextSegmenter textSegmenter) {
-        this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.knowledgeBaseAccessService = knowledgeBaseAccessService;
         this.documentRepository = documentRepository;
         this.embeddingService = embeddingService;
         this.ragRetrievalRepository = ragRetrievalRepository;
@@ -60,14 +60,13 @@ public class RagRetrievalService {
 
     @Transactional(readOnly = true)
     public VectorSearchResponse search(CurrentUser currentUser, VectorSearchRequest request) {
-        knowledgeBaseRepository.findByIdAndUserId(request.knowledgeBaseId(), currentUser.id())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "知识库不存在"));
+        knowledgeBaseAccessService.requireVisible(currentUser, request.knowledgeBaseId());
 
         String question = request.question().trim();
         int topK = request.normalizedTopK();
         RetrievalFilters filters = new RetrievalFilters(
                 request.normalizedDocumentIds(), request.startDate(), request.endDate());
-        validateSelectedDocuments(currentUser, request.knowledgeBaseId(), filters);
+        validateSelectedDocuments(request.knowledgeBaseId(), filters);
         double similarityThreshold = request.similarityThreshold() == null
                 ? retrievalProperties.getSimilarityThreshold()
                 : request.similarityThreshold();
@@ -123,16 +122,13 @@ public class RagRetrievalService {
         return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
-    private void validateSelectedDocuments(
-            CurrentUser currentUser,
-            Long knowledgeBaseId,
-            RetrievalFilters filters) {
+    private void validateSelectedDocuments(Long knowledgeBaseId, RetrievalFilters filters) {
         if (!filters.hasDocumentIds()) {
             return;
         }
 
-        long matchedDocumentCount = documentRepository.countByIdInAndKnowledgeBaseIdAndUserId(
-                filters.documentIds(), knowledgeBaseId, currentUser.id());
+        long matchedDocumentCount = documentRepository.countByIdInAndKnowledgeBaseId(
+                filters.documentIds(), knowledgeBaseId);
         if (matchedDocumentCount != filters.documentIds().size()) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "筛选文档不存在或不属于当前知识库");
         }

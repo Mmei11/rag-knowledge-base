@@ -24,7 +24,9 @@ import com.example.ragkb.document.service.DocumentService;
 import com.example.ragkb.document.task.DocumentProcessTask;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.security.JwtAuthenticationFilter;
+import com.example.ragkb.security.RestAccessDeniedHandler;
 import com.example.ragkb.security.JwtTokenProvider;
+import com.example.ragkb.user.repository.UserRepository;
 import com.example.ragkb.user.entity.UserRole;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -41,7 +43,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = DocumentController.class)
-@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class})
+@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class, RestAccessDeniedHandler.class})
 @TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:5173")
 class DocumentControllerTests {
 
@@ -61,6 +63,9 @@ class DocumentControllerTests {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void shouldUploadDocument() throws Exception {

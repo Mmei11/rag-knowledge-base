@@ -71,6 +71,8 @@ app:
     backfill:
       enabled: ${SEARCH_TEXT_BACKFILL_ENABLED:false}
       batch-size: ${SEARCH_TEXT_BACKFILL_BATCH_SIZE:500}
+  admin:
+    bootstrap-username: ${ADMIN_BOOTSTRAP_USERNAME:}
   chat-model:
     provider: ${CHAT_MODEL_PROVIDER:mock}
     model: ${CHAT_MODEL_NAME:mock-chat-model}

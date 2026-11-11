@@ -23,7 +23,9 @@ import com.example.ragkb.config.CorsConfig;
 import com.example.ragkb.config.SecurityConfig;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.security.JwtAuthenticationFilter;
+import com.example.ragkb.security.RestAccessDeniedHandler;
 import com.example.ragkb.security.JwtTokenProvider;
+import com.example.ragkb.user.repository.UserRepository;
 import com.example.ragkb.user.entity.UserRole;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -39,7 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = ChatController.class)
-@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class})
+@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class, RestAccessDeniedHandler.class})
 @TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:5173")
 class ChatControllerTests {
 
@@ -56,6 +58,9 @@ class ChatControllerTests {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void shouldCreateSession() throws Exception {

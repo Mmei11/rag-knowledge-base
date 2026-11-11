@@ -18,6 +18,9 @@ pgvector 向量存储
 混合检索（向量 + 关键词 + RRF）
 中文分词关键词检索（jieba + PostgreSQL GIN）
 Cross-Encoder 重排（DashScope qwen3-rerank，默认关闭）
+管理员用户管理（启用/禁用/角色）
+知识库成员共享（OWNER/EDITOR/VIEWER）
+操作审计日志
 RAG Prompt 构建
 OpenAI/Qwen API 问答生成
 聊天会话、消息、引用记录
@@ -188,6 +191,9 @@ EMBEDDING_DIMENSION=1024
 RERANK_PROVIDER=dashscope
 RERANK_MODEL=qwen3-rerank
 RERANK_CANDIDATE_LIMIT=30
+
+# 首次启动把已有用户提升为管理员；完成后可清空
+ADMIN_BOOTSTRAP_USERNAME=
 ```
 
 详细说明见 `docs/qwen-integration.md`。

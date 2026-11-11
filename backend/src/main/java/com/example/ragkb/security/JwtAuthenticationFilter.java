@@ -1,5 +1,8 @@
 package com.example.ragkb.security;
 
+import com.example.ragkb.user.entity.User;
+import com.example.ragkb.user.entity.UserStatus;
+import com.example.ragkb.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,9 +22,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserRepository userRepository) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -38,15 +43,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
             String token = authorization.substring(BEARER_PREFIX.length());
-            jwtTokenProvider.parseToken(token).ifPresent(this::authenticate);
+            jwtTokenProvider.parseToken(token)
+                    .flatMap(principal -> userRepository.findById(principal.id()))
+                    .filter(user -> user.getStatus() == UserStatus.ENABLED)
+                    .ifPresent(this::authenticate);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void authenticate(CurrentUser currentUser) {
-        SimpleGrantedAuthority authority =
-                new SimpleGrantedAuthority("ROLE_" + currentUser.role().name());
+    private void authenticate(User user) {
+        CurrentUser currentUser = new CurrentUser(user.getId(), user.getUsername(), user.getRole());
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(currentUser, null, List.of(authority));
         SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -24,10 +24,12 @@ erDiagram
     users ||--o{ chat_sessions : creates
     users ||--o{ chat_messages : sends
     users ||--o{ operation_logs : triggers
+    users ||--o{ knowledge_base_members : joins
 
     knowledge_bases ||--o{ documents : contains
     knowledge_bases ||--o{ document_chunks : contains
     knowledge_bases ||--o{ chat_sessions : scopes
+    knowledge_bases ||--o{ knowledge_base_members : shared_with
 
     documents ||--o{ document_chunks : splits_into
     documents ||--o{ message_references : cited_by
@@ -120,18 +122,43 @@ similarity
 ```
 
 ```text
+knowledge_base_members
+```
+
+保存共享知识库的成员和角色。`OWNER` 不写入此表，隐式来自 `knowledge_bases.user_id`。
+
+关键字段：
+
+```text
+knowledge_base_id
+user_id
+role: EDITOR / VIEWER
+```
+
+```text
 operation_logs
 ```
 
-预留操作日志表，用于记录重要用户或系统行为。
+保存管理员和用户的重要操作审计，供管理员查询。
+
+关键字段：
+
+```text
+user_id
+action
+resource_type
+resource_id
+ip
+created_at
+```
 
 ## 删除策略
 
 ```text
-删除 knowledge_base -> 级联删除 documents、document_chunks、chat_sessions
+删除 knowledge_base -> 级联删除 documents、document_chunks、chat_sessions、knowledge_base_members
 删除 document -> 级联删除 document_chunks 和相关引用
 删除 chat_message -> 级联删除 message_references
-删除 user -> 大部分业务数据限制删除，operation_logs 中 user_id 可置空
+删除 user -> 级联删除 knowledge_base_members；operation_logs 中 user_id 可置空
 ```
 
 ## 索引设计
@@ -148,7 +175,10 @@ chat_sessions(user_id, updated_at DESC)
 chat_messages(session_id, created_at, id)
 message_references(document_id)
 message_references(chunk_id)
+knowledge_base_members(user_id)
+knowledge_base_members(knowledge_base_id)
 operation_logs(user_id, created_at DESC)
+operation_logs(action, created_at DESC)
 ```
 
 这些索引用来支持：

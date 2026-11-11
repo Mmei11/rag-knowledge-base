@@ -17,10 +17,13 @@ import com.example.ragkb.config.SecurityConfig;
 import com.example.ragkb.knowledgebase.dto.CreateKnowledgeBaseRequest;
 import com.example.ragkb.knowledgebase.dto.KnowledgeBaseResponse;
 import com.example.ragkb.knowledgebase.dto.UpdateKnowledgeBaseRequest;
+import com.example.ragkb.knowledgebase.service.KnowledgeBaseMemberService;
 import com.example.ragkb.knowledgebase.service.KnowledgeBaseService;
 import com.example.ragkb.security.CurrentUser;
 import com.example.ragkb.security.JwtAuthenticationFilter;
+import com.example.ragkb.security.RestAccessDeniedHandler;
 import com.example.ragkb.security.JwtTokenProvider;
+import com.example.ragkb.user.repository.UserRepository;
 import com.example.ragkb.user.entity.UserRole;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -36,7 +39,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = KnowledgeBaseController.class)
-@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class})
+@Import({GlobalExceptionHandler.class, CorsConfig.class, SecurityConfig.class, JwtAuthenticationFilter.class, RestAccessDeniedHandler.class})
 @TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:5173")
 class KnowledgeBaseControllerTests {
 
@@ -49,7 +52,13 @@ class KnowledgeBaseControllerTests {
     private KnowledgeBaseService knowledgeBaseService;
 
     @MockitoBean
+    private KnowledgeBaseMemberService knowledgeBaseMemberService;
+
+    @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void shouldCreateKnowledgeBase() throws Exception {

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute'
 import { AppLayout } from './layout/AppLayout'
+import { AdminPage } from './pages/AdminPage'
 import { AuthPage } from './pages/AuthPage'
 import { ChatPage } from './pages/ChatPage'
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage'
@@ -22,6 +23,14 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/knowledge-bases" element={<KnowledgeBasePage />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
         </Route>
       </Route>
 

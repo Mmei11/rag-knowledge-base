@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.ragkb.admin.service.OperationLogService;
 import com.example.ragkb.common.exception.BusinessException;
 import com.example.ragkb.security.JwtTokenProvider;
 import com.example.ragkb.user.dto.LoginRequest;
@@ -36,10 +37,13 @@ class AuthServiceTests {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private OperationLogService operationLogService;
+
     @Test
     void shouldRegisterUserWithEncodedPassword() {
         // 手动创建被测试对象，把两个 Mock 依赖传进去。
-        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider);
+        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, operationLogService);
 
         // 约定测试场景：alice 这个用户名还不存在，可以注册。
         when(userRepository.existsByUsername("alice")).thenReturn(false);
@@ -72,7 +76,7 @@ class AuthServiceTests {
 
     @Test
     void shouldRejectDuplicatedUsername() {
-        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider);
+        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, operationLogService);
 
         // 约定测试场景：alice 已经存在。
         when(userRepository.existsByUsername("alice")).thenReturn(true);
@@ -86,7 +90,7 @@ class AuthServiceTests {
 
     @Test
     void shouldLoginWithToken() {
-        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider);
+        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, operationLogService);
         User user = new User("alice", "encoded-password", "Alice");
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Password123", "encoded-password")).thenReturn(true);
@@ -103,7 +107,7 @@ class AuthServiceTests {
 
     @Test
     void shouldRejectInvalidPassword() {
-        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider);
+        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, operationLogService);
         User user = new User("alice", "encoded-password", "Alice");
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("WrongPassword", "encoded-password")).thenReturn(false);
@@ -115,7 +119,7 @@ class AuthServiceTests {
 
     @Test
     void shouldRejectDisabledUser() {
-        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider);
+        AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenProvider, operationLogService);
         User user = new User("alice", "encoded-password", "Alice");
         user.disable();
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));

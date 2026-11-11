@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type {
+  AddKnowledgeBaseMemberRequest,
   ApiResponse,
   ChatAnswerResponse,
   ChatMessageResponse,
@@ -10,14 +11,22 @@ import type {
   CreateKnowledgeBaseRequest,
   DocumentResponse,
   DocumentStatusResponse,
+  KnowledgeBaseMemberResponse,
   KnowledgeBaseResponse,
   LoginRequest,
   LoginResponse,
+  OperationAction,
+  OperationLogResponse,
+  OperationResourceType,
+  PageResponse,
   RegisterRequest,
   SendChatMessageRequest,
+  UpdateKnowledgeBaseMemberRoleRequest,
   UpdateKnowledgeBaseRequest,
   UpdateChatSessionRequest,
   UserResponse,
+  UserRole,
+  UserStatus,
 } from '../types/api'
 
 const API_BASE_URL =
@@ -281,6 +290,20 @@ async function streamChatMessage(
   }
 }
 
+function buildQuery(
+  params: Record<string, string | number | undefined | null>,
+) {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') {
+      continue
+    }
+    search.set(key, String(value))
+  }
+  const query = search.toString()
+  return query ? `?${query}` : ''
+}
+
 export const authApi = {
   register(request: RegisterRequest) {
     return apiRequest<UserResponse>('/api/auth/register', {
@@ -322,6 +345,47 @@ export const knowledgeBaseApi = {
     return apiRequest<void>(`/api/knowledge-bases/${id}`, {
       method: 'DELETE',
     })
+  },
+}
+
+export const knowledgeBaseMemberApi = {
+  list(knowledgeBaseId: number) {
+    return apiRequest<KnowledgeBaseMemberResponse[]>(
+      `/api/knowledge-bases/${knowledgeBaseId}/members`,
+    )
+  },
+
+  add(knowledgeBaseId: number, request: AddKnowledgeBaseMemberRequest) {
+    return apiRequest<KnowledgeBaseMemberResponse>(
+      `/api/knowledge-bases/${knowledgeBaseId}/members`,
+      {
+        method: 'POST',
+        body: request,
+      },
+    )
+  },
+
+  updateRole(
+    knowledgeBaseId: number,
+    userId: number,
+    request: UpdateKnowledgeBaseMemberRoleRequest,
+  ) {
+    return apiRequest<KnowledgeBaseMemberResponse>(
+      `/api/knowledge-bases/${knowledgeBaseId}/members/${userId}`,
+      {
+        method: 'PUT',
+        body: request,
+      },
+    )
+  },
+
+  remove(knowledgeBaseId: number, userId: number) {
+    return apiRequest<void>(
+      `/api/knowledge-bases/${knowledgeBaseId}/members/${userId}`,
+      {
+        method: 'DELETE',
+      },
+    )
   },
 }
 
@@ -423,5 +487,48 @@ export const chatApi = {
     signal: AbortSignal,
   ) {
     return streamChatMessage(sessionId, request, handlers, signal)
+  },
+}
+
+export const adminApi = {
+  listUsers(params: {
+    keyword?: string
+    status?: UserStatus
+    role?: UserRole
+    page?: number
+    size?: number
+  }) {
+    return apiRequest<PageResponse<UserResponse>>(
+      `/api/admin/users${buildQuery(params)}`,
+    )
+  },
+
+  updateUserStatus(id: number, status: UserStatus) {
+    return apiRequest<UserResponse>(`/api/admin/users/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    })
+  },
+
+  updateUserRole(id: number, role: UserRole) {
+    return apiRequest<UserResponse>(`/api/admin/users/${id}/role`, {
+      method: 'PATCH',
+      body: { role },
+    })
+  },
+
+  listOperationLogs(params: {
+    userId?: number
+    action?: OperationAction
+    resourceType?: OperationResourceType
+    resourceId?: number
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  }) {
+    return apiRequest<PageResponse<OperationLogResponse>>(
+      `/api/admin/operation-logs${buildQuery(params)}`,
+    )
   },
 }

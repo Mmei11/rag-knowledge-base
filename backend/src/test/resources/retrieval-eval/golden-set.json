@@ -4,133 +4,174 @@
   "username": "meijinchao",
   "knowledgeBaseName": "Food secrity",
   "topK": 10,
-  "ks": [1, 3, 5, 10],
+  "ks": [
+    1,
+    3,
+    5,
+    10
+  ],
   "cases": [
     {
       "id": "q-law-layout",
       "question": "食品生产企业对设备布局和工艺流程有什么要求以防止交叉污染？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#12"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#12"
+      ]
     },
     {
       "id": "q-law-haccp",
       "question": "国家鼓励食品生产经营企业实施危害分析与关键控制点体系吗？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#18"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#18"
+      ]
     },
     {
       "id": "q-law-record-retention",
       "question": "食用农产品进货查验记录和凭证至少应当保存多久？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#24"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#24"
+      ]
     },
     {
       "id": "q-law-accident-report",
       "question": "发生食品安全事故后，接到报告的县级人民政府食品安全监督管理部门应当向谁报告？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#36"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#36"
+      ]
     },
     {
       "id": "q-law-penalty-inspection",
       "question": "食品生产者未按规定对采购的食品原料进行检验，可能受到什么处罚？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#48"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#48"
+      ]
     },
     {
       "id": "q-gb-wall-ground",
       "question": "食品生产车间的墙壁与地面交界处有什么卫生要求？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#5"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#5"
+      ]
     },
     {
       "id": "q-gb-temperature",
       "question": "贮存食品时对温湿度控制设施有什么要求？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#10"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#10"
+      ]
     },
     {
       "id": "q-gb-clothing",
       "question": "不同作业区的工作服可以混用吗？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#15"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#15"
+      ]
     },
     {
       "id": "q-gb-allergen",
       "question": "食品生产企业应如何开展致敏物质管理？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#20"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#20"
+      ]
     },
     {
       "id": "q-gb-haccp-principles",
       "question": "HACCP 的七项原理分别是什么？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#26"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#26"
+      ]
     },
     {
       "id": "q-gb-micro-monitor",
       "question": "生产过程微生物监控的取样点和频率应如何调整？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#40"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#40"
+      ]
     },
     {
       "id": "q-fb-risk-source",
       "question": "食品安全风险可能来自哪些方面？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食源性疾病与安全操作要点.txt#0"]
+      "relevantChunks": [
+        "食源性疾病与安全操作要点.txt#0"
+      ]
     },
     {
       "id": "q-fb-high-risk",
       "question": "哪些人群更容易受到食源性疾病的严重影响？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
+      "relevantChunks": [
+        "食源性疾病与安全操作要点.txt#1"
+      ]
     },
     {
       "id": "q-fb-suspected",
       "question": "出现疑似食源性疾病时应该保留哪些物品并记录什么信息？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
+      "relevantChunks": [
+        "食源性疾病与安全操作要点.txt#1"
+      ]
     },
     {
       "id": "q-sampling-representative",
       "question": "食品采样时如何保证样品具有代表性？",
       "category": "original",
       "difficulty": "easy",
-      "relevantChunks": ["食品安全.pdf#45"]
+      "relevantChunks": [
+        "食品安全.pdf#45"
+      ]
     },
     {
       "id": "q-pufferfish-treatment",
       "question": "河豚中毒有哪些治疗措施？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["食品安全.pdf#120"]
+      "relevantChunks": [
+        "食品安全.pdf#120"
+      ]
     },
     {
       "id": "q-paper-title",
       "question": "投稿的论文题目是什么？",
       "category": "original",
       "difficulty": "hard",
-      "relevantChunks": ["Cover Letter.docx#0"]
+      "relevantChunks": [
+        "Cover Letter.docx#0"
+      ]
     },
     {
       "id": "q-paper-metrics",
       "question": "论文在 HOTA 和 AssA 指标上的表现如何？",
       "category": "original",
       "difficulty": "medium",
-      "relevantChunks": ["Cover Letter.docx#2"]
+      "relevantChunks": [
+        "Cover Letter.docx#2"
+      ]
     },
     {
       "id": "q-fda-shellfish",
@@ -138,7 +179,9 @@
       "questionZh": "软体贝类的原容器和记录有哪些要求？",
       "category": "cross_lingual",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#240"
+      ]
     },
     {
       "id": "q-fda-hepatitis",
@@ -146,7 +189,9 @@
       "questionZh": "食品员工感染无黄疸型肝炎意味着什么？",
       "category": "cross_lingual",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1200"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1200"
+      ]
     },
     {
       "id": "q-fda-heating",
@@ -154,21 +199,27 @@
       "questionZh": "初始加热阶段最长一小时的时间限制是多少，为什么这样规定？",
       "category": "cross_lingual",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1440"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1440"
+      ]
     },
     {
       "id": "q-xl-shellfish-zh",
       "question": "软体贝类必须一直放在原包装容器里吗？有什么例外情况？",
       "category": "cross_lingual",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#240"
+      ]
     },
     {
       "id": "q-xl-handwashing-zh",
       "question": "食品员工在哪些情况下必须洗手？",
       "category": "cross_lingual",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#210"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#210"
+      ]
     },
     {
       "id": "q-xl-law-health-en",
@@ -176,63 +227,81 @@
       "questionZh": "中国食品生产人员的健康检查有什么要求？",
       "category": "cross_lingual",
       "difficulty": "hard",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#17"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#17"
+      ]
     },
     {
       "id": "q-para-health-check",
       "question": "食品厂员工是不是每年都要体检并拿到健康证才能上岗？",
       "category": "paraphrase",
       "difficulty": "medium",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#17"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#17"
+      ]
     },
     {
       "id": "q-para-layout",
       "question": "生产车间怎么布置设备和工艺流程，才能避免交叉污染？",
       "category": "paraphrase",
       "difficulty": "medium",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#12"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#12"
+      ]
     },
     {
       "id": "q-para-records",
       "question": "卖菜时进货查验的票据最少要留多长时间？",
       "category": "paraphrase",
       "difficulty": "hard",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#24"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#24"
+      ]
     },
     {
       "id": "q-para-allergen",
       "question": "厂里怎么识别和管理可能引起过敏的原料？",
       "category": "paraphrase",
       "difficulty": "medium",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#20"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#20"
+      ]
     },
     {
       "id": "q-para-micro",
       "question": "车间做微生物监测时，采样点和检测频率要怎么调整？",
       "category": "paraphrase",
       "difficulty": "medium",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#40"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#40"
+      ]
     },
     {
       "id": "q-para-fb-high-risk",
       "question": "哪些人吃了不安全食品后更容易出现严重后果？",
       "category": "paraphrase",
       "difficulty": "easy",
-      "relevantChunks": ["食源性疾病与安全操作要点.txt#1"]
+      "relevantChunks": [
+        "食源性疾病与安全操作要点.txt#1"
+      ]
     },
     {
       "id": "q-para-sampling",
       "question": "抽检食品时，怎么做才能让样品有代表性？",
       "category": "paraphrase",
       "difficulty": "medium",
-      "relevantChunks": ["食品安全.pdf#45"]
+      "relevantChunks": [
+        "食品安全.pdf#45"
+      ]
     },
     {
       "id": "q-para-heating",
       "question": "FDA 为什么规定初始加热阶段最长只能一小时？",
       "category": "paraphrase",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#1440"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1440"
+      ]
     },
     {
       "id": "q-multi-wall-door",
@@ -289,57 +358,75 @@
       "question": "食品添加剂经营者采购食品添加剂时应当查验哪些证明并记录什么？",
       "category": "hard_negative",
       "difficulty": "hard",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#22"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#22"
+      ]
     },
     {
       "id": "q-hn-accident-report",
       "question": "食品安全事故发生后，县级监管部门接到报告后应该向哪一级政府报告？",
       "category": "hard_negative",
       "difficulty": "hard",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#36"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#36"
+      ]
     },
     {
       "id": "q-hn-door-insect",
       "question": "生产车间与外界相通的门，怎么防止苍蝇等虫害进入？",
       "category": "hard_negative",
       "difficulty": "hard",
-      "relevantChunks": ["食品生产通用卫生规范_GB14881-2025.pdf#6"]
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#6"
+      ]
     },
     {
       "id": "q-hn-shellfish-repack",
       "question": "软体贝类在什么情况下可以转移到消费者自取容器中？",
       "category": "hard_negative",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#242"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#242"
+      ]
     },
     {
       "id": "q-hn-hepatitis-exclusion",
       "question": "食品员工被诊断为甲型肝炎后，什么情况下会被排除出工作岗位？",
       "category": "hard_negative",
       "difficulty": "hard",
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#184"]
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#184"
+      ]
     },
     {
       "id": "q-hn-record-retention",
       "question": "食品生产企业的原料进货查验记录最少要保存多久？",
       "category": "hard_negative",
       "difficulty": "hard",
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#19"]
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#19"
+      ]
     },
     {
       "id": "q-filter-law-health",
       "question": "食品生产经营人员健康检查有什么要求？",
       "category": "filter",
       "difficulty": "medium",
-      "documentFileNames": ["中华人民共和国食品安全法.pdf"],
-      "relevantChunks": ["中华人民共和国食品安全法.pdf#17"]
+      "documentFileNames": [
+        "中华人民共和国食品安全法.pdf"
+      ],
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#17"
+      ]
     },
     {
       "id": "q-filter-gb-pest",
       "question": "如何防止虫害侵入生产车间？",
       "category": "filter",
       "difficulty": "hard",
-      "documentFileNames": ["食品生产通用卫生规范_GB14881-2025.pdf"],
+      "documentFileNames": [
+        "食品生产通用卫生规范_GB14881-2025.pdf"
+      ],
       "relevantChunks": [
         "食品生产通用卫生规范_GB14881-2025.pdf#6",
         "食品生产通用卫生规范_GB14881-2025.pdf#14"
@@ -351,8 +438,548 @@
       "questionZh": "软体贝类的原容器要求是什么？",
       "category": "filter",
       "difficulty": "hard",
-      "documentFileNames": ["FDA_Food_Code_2026_英文.pdf"],
-      "relevantChunks": ["FDA_Food_Code_2026_英文.pdf#240"]
+      "documentFileNames": [
+        "FDA_Food_Code_2026_英文.pdf"
+      ],
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#240"
+      ]
+    },
+    {
+      "id": "q2-law-pesticide-management",
+      "question": "国家对农药使用实行什么管理制度？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#4"
+      ]
+    },
+    {
+      "id": "q2-law-risk-warning",
+      "question": "国务院食品安全监督管理部门在什么情况下应当发布食品安全风险警示？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#8"
+      ]
+    },
+    {
+      "id": "q2-law-traceability",
+      "question": "国家建立的食品安全全程追溯制度要求食品生产经营者做什么？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#16"
+      ]
+    },
+    {
+      "id": "q2-law-bulk-label",
+      "question": "食品经营者贮存散装食品应在贮存位置标明哪些内容？",
+      "category": "original",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#20"
+      ]
+    },
+    {
+      "id": "q2-law-prepackaged-label",
+      "question": "预包装食品的标签应当标明哪些事项？",
+      "category": "original",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#24"
+      ]
+    },
+    {
+      "id": "q2-law-special-medical-food",
+      "question": "特殊医学用途配方食品注册时需要提交哪些材料？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#28"
+      ]
+    },
+    {
+      "id": "q2-law-import-no-standard",
+      "question": "进口尚无食品安全国家标准的食品应如何办理？",
+      "category": "original",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#32"
+      ]
+    },
+    {
+      "id": "q2-law-medical-report",
+      "question": "医疗机构发现食源性疾病病人或疑似病人应如何报告？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#36"
+      ]
+    },
+    {
+      "id": "q2-law-rapid-test",
+      "question": "县级以上食品安全监督管理部门可以采用什么方法对食品进行抽查检测？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#40"
+      ]
+    },
+    {
+      "id": "q2-law-unlicensed-penalty",
+      "question": "未取得食品生产经营许可从事食品生产经营活动，会受到什么处罚？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#44"
+      ]
+    },
+    {
+      "id": "q2-law-management-system-penalty",
+      "question": "食品生产经营企业未按规定建立食品安全管理制度，可能受到什么处罚？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#48"
+      ]
+    },
+    {
+      "id": "q2-law-obstruction-penalty",
+      "question": "拒绝、阻挠、干涉食品安全监督检查会受到什么处罚？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#52"
+      ]
+    },
+    {
+      "id": "q2-law-accident-definition",
+      "question": "食品安全事故的定义是什么？",
+      "category": "original",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#60"
+      ]
+    },
+    {
+      "id": "q2-gb-site-selection",
+      "question": "GB14881 对食品生产厂址选择有哪些要求？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#3"
+      ]
+    },
+    {
+      "id": "q2-gb-floor",
+      "question": "食品生产车间地面应满足哪些卫生要求？",
+      "category": "original",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#6"
+      ]
+    },
+    {
+      "id": "q2-gb-lighting",
+      "question": "食品生产车间的照明设施有哪些要求？",
+      "category": "original",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#9"
+      ]
+    },
+    {
+      "id": "q2-gb-management-system",
+      "question": "GB14881 对食品安全管理制度的内容有哪些要求？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#12"
+      ]
+    },
+    {
+      "id": "q2-gb-storage-fifo",
+      "question": "食品仓库出货应遵循什么原则？",
+      "category": "original",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#21"
+      ]
+    },
+    {
+      "id": "q2-gb-record-retention",
+      "question": "食品生产企业的记录保存期限至少多久？",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#24"
+      ]
+    },
+    {
+      "id": "q2-gb-verification",
+      "question": "HACCP 验证活动可以包括哪些内容？",
+      "category": "original",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#33"
+      ]
+    },
+    {
+      "id": "q2-fda-hold-order",
+      "question": "What must the regulatory authority do when placing food under a hold order?",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#720"
+      ],
+      "questionZh": "监管部门对问题食品下架封存时会怎么做？"
+    },
+    {
+      "id": "q2-fda-beef-records",
+      "question": "What records must retail stores maintain when grinding raw beef?",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#960"
+      ],
+      "questionZh": "超市绞牛肉需要保留哪些记录？"
+    },
+    {
+      "id": "q2-fda-diarrhea-pathogens",
+      "question": "Which pathogens are indicated by diarrhea in food employees?",
+      "category": "original",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1080"
+      ],
+      "questionZh": "食品员工腹泻可能提示哪些病原体感染？"
+    },
+    {
+      "id": "q2-fda-suspect-cans",
+      "question": "What should be done with suspect cans that may be under-processed?",
+      "category": "original",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1320"
+      ],
+      "questionZh": "疑似加工不足的罐头应如何处理？"
+    },
+    {
+      "id": "q2-para-pesticide",
+      "question": "国家是怎么管理农药使用的？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#4"
+      ]
+    },
+    {
+      "id": "q2-para-traceability",
+      "question": "食品企业为什么需要建立追溯体系，法律鼓励用什么方式？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#16"
+      ]
+    },
+    {
+      "id": "q2-para-bulk-label",
+      "question": "店里卖的散装食品，标签上要写哪些信息？",
+      "category": "paraphrase",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#20"
+      ]
+    },
+    {
+      "id": "q2-para-prepackaged-label",
+      "question": "超市里的预包装食品，包装上必须标什么？",
+      "category": "paraphrase",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#24"
+      ]
+    },
+    {
+      "id": "q2-para-import-no-standard",
+      "question": "如果进口的食品国内还没有国家标准，怎么办？",
+      "category": "paraphrase",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#32"
+      ]
+    },
+    {
+      "id": "q2-para-rapid-test",
+      "question": "监管部门怎么快速筛查食品是否安全？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#40"
+      ]
+    },
+    {
+      "id": "q2-para-unlicensed",
+      "question": "没有许可证就生产食品，会怎么处罚？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#44"
+      ]
+    },
+    {
+      "id": "q2-para-gb-site",
+      "question": "建食品厂时，选址要避开哪些地方？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#3"
+      ]
+    },
+    {
+      "id": "q2-para-gb-fifo",
+      "question": "仓库发货时应该先出哪些货？",
+      "category": "paraphrase",
+      "difficulty": "easy",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#21"
+      ]
+    },
+    {
+      "id": "q2-para-fda-beef-records",
+      "question": "超市绞牛肉要保留哪些记录？",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#960"
+      ]
+    },
+    {
+      "id": "q2-xl-law-risk-warning",
+      "question": "When should a food safety risk warning be issued?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#8"
+      ],
+      "questionZh": "什么时候应当发布食品安全风险警示？"
+    },
+    {
+      "id": "q2-xl-law-traceability",
+      "question": "What does the Food Safety Law require for food traceability?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#16"
+      ],
+      "questionZh": "食品安全法对食品追溯有什么要求？"
+    },
+    {
+      "id": "q2-xl-law-prepackaged-label",
+      "question": "What information must a prepackaged food label include?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#24"
+      ],
+      "questionZh": "预包装食品标签必须包括哪些信息？"
+    },
+    {
+      "id": "q2-xl-law-import-no-standard",
+      "question": "How should food without a Chinese national standard be imported?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#32"
+      ],
+      "questionZh": "进口尚无中国国家标准的食品应如何办理？"
+    },
+    {
+      "id": "q2-xl-gb-site-selection",
+      "question": "What site selection requirements does GB14881 specify for food production?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#3"
+      ],
+      "questionZh": "GB14881 对食品生产选址有什么要求？"
+    },
+    {
+      "id": "q2-xl-gb-lighting",
+      "question": "What are the lighting requirements for food production workshops?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#9"
+      ],
+      "questionZh": "食品生产车间的照明有什么要求？"
+    },
+    {
+      "id": "q2-xl-fda-cheese-shelf-life",
+      "question": "What factors support the extended shelf life of vacuum packaged hard and semisoft cheeses?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1560"
+      ],
+      "questionZh": "真空包装硬质和半硬质奶酪延长保质期的因素有哪些？"
+    },
+    {
+      "id": "q2-xl-fda-sanitizer",
+      "question": "What factors should be included when validating on-site generated sanitizer efficacy?",
+      "category": "cross_lingual",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1680"
+      ],
+      "questionZh": "验证现场制备消毒剂效果时应包括哪些因素？"
+    },
+    {
+      "id": "q2-multi-law-traceability-records",
+      "question": "食品追溯体系和食品批发销售记录分别有什么要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#16",
+        "中华人民共和国食品安全法.pdf#20"
+      ]
+    },
+    {
+      "id": "q2-multi-law-label-additive",
+      "question": "预包装食品标签应标明什么？食品添加剂应如何使用？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#24",
+        "中华人民共和国食品安全法.pdf#16"
+      ]
+    },
+    {
+      "id": "q2-multi-law-accident-medical",
+      "question": "食品安全事故的政府报告和医疗机构的食源性疾病报告分别有什么要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#36",
+        "食品安全.pdf#50"
+      ]
+    },
+    {
+      "id": "q2-multi-gb-site-floor",
+      "question": "GB14881 对厂址选择和车间地面分别有什么要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#3",
+        "食品生产通用卫生规范_GB14881-2025.pdf#6"
+      ]
+    },
+    {
+      "id": "q2-multi-gb-lighting-warehouse",
+      "question": "食品生产车间的照明和仓库的贮存运输分别有什么要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#9",
+        "食品生产通用卫生规范_GB14881-2025.pdf#21"
+      ]
+    },
+    {
+      "id": "q2-multi-fda-hold-beef",
+      "question": "FDA 对问题食品的扣留和绞牛肉记录分别有什么要求？",
+      "category": "multi_chunk",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#720",
+        "FDA_Food_Code_2026_英文.pdf#960"
+      ]
+    },
+    {
+      "id": "q2-hn-law-health-cert-penalty",
+      "question": "安排未取得健康证明的人员从事接触直接入口食品工作，会怎么处罚？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#48"
+      ]
+    },
+    {
+      "id": "q2-hn-law-additive-use",
+      "question": "食品添加剂应当如何按国家标准使用？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#16"
+      ]
+    },
+    {
+      "id": "q2-hn-gb-complaint",
+      "question": "客户投诉应该怎么处理？",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#24"
+      ]
+    },
+    {
+      "id": "q2-hn-fda-ice-freezing",
+      "question": "Does freezing kill microorganisms in ice?",
+      "category": "hard_negative",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1320"
+      ],
+      "questionZh": "冷冻能杀死冰中的微生物吗？"
+    },
+    {
+      "id": "q2-filter-gb-lighting",
+      "question": "裸露食品上方安装照明设施有什么要求？",
+      "category": "filter",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "食品生产通用卫生规范_GB14881-2025.pdf#9"
+      ],
+      "documentFileNames": [
+        "食品生产通用卫生规范_GB14881-2025.pdf"
+      ]
+    },
+    {
+      "id": "q2-filter-law-interview",
+      "question": "什么情况下监管部门可以约谈食品企业负责人？",
+      "category": "filter",
+      "difficulty": "medium",
+      "relevantChunks": [
+        "中华人民共和国食品安全法.pdf#40"
+      ],
+      "documentFileNames": [
+        "中华人民共和国食品安全法.pdf"
+      ]
+    },
+    {
+      "id": "q2-filter-fda-managerial",
+      "question": "Why is active managerial control important when an inspector is not present?",
+      "category": "filter",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "FDA_Food_Code_2026_英文.pdf#1920"
+      ],
+      "questionZh": "检查员不在场时，为什么主动管理控制很重要？",
+      "documentFileNames": [
+        "FDA_Food_Code_2026_英文.pdf"
+      ]
+    },
+    {
+      "id": "q2-filter-fs-2hour",
+      "question": "哪些食品安全事故必须在 2 小时内报告？",
+      "category": "filter",
+      "difficulty": "hard",
+      "relevantChunks": [
+        "食品安全.pdf#50"
+      ],
+      "documentFileNames": [
+        "食品安全.pdf"
+      ]
     }
   ]
 }

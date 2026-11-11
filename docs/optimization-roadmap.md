@@ -259,10 +259,22 @@ MRR=0.8207、nDCG@10=0.8326，同义改写和难负例提升明显；2 条 hard 
 - Controller 层增加权限控制。
 - 增加操作日志表。
 
+### 当前进展
+
+- 已实现管理员接口：用户列表/搜索、启用/禁用、角色变更；`/api/admin/**` 仅 `ADMIN` 可访问，
+  401/403 返回统一 JSON。
+- `JwtAuthenticationFilter` 每次请求从数据库重新加载用户状态和角色，禁用/降级立即生效。
+- 已实现知识库成员共享：`OWNER` / `EDITOR` / `VIEWER`，OWNER 隐式来自
+  `knowledge_bases.user_id`，成员 CRUD 由 OWNER 管理。
+- 已实现操作审计：`operation_logs` 记录用户、知识库、成员和文档的关键操作，
+  管理员可按用户/动作/资源/时间查询。
+- 已实现首个管理员 bootstrap：`ADMIN_BOOTSTRAP_USERNAME`。
+- 仍待：知识库公开/私有、邀请通知、审计日志保留策略、管理员/成员前端页面。
+
 ### 简历亮点
 
 ```text
-实现基于用户和知识库维度的数据隔离，并扩展知识库共享与权限控制能力。
+实现管理员用户管理、知识库成员共享和操作审计；基于 OWNER/EDITOR/VIEWER 权限模型与 JWT 实时状态校验，支持禁用和角色变更即时生效。
 ```
 
 ## 8. 工程化优化
@@ -288,10 +300,19 @@ MRR=0.8207、nDCG@10=0.8326，同义改写和难负例提升明显；2 条 hard 
 - 增加请求日志拦截器。
 - 增加生产部署文档。
 
+### 当前进展
+
+- 已提供 `docker-compose.yml`，一键启动 PostgreSQL + pgvector、Redis、backend 和 frontend；前后端均有 Dockerfile。
+- 后端已有单元测试、Controller 测试和 Spring 上下文测试，完整 `mvn test` 可通过；前端 `npm run build` 包含 `tsc -b`，`npm run lint` 使用 oxlint。
+- 已实现统一 `ApiResponse`、`ErrorCode`、`GlobalExceptionHandler` 和 `RequestLogAspect`（记录方法、URI、用户和耗时）。
+- 已接入 Actuator health/info，Docker healthcheck 使用 `/actuator/health`。
+- 已使用 Redis 缓存知识库/文档列表与详情，并实现聊天限流。
+- 尚未接入 GitHub Actions、Springdoc OpenAPI、traceId/MDC、统一错误码文档和生产环境部署说明。
+
 ### 简历亮点
 
 ```text
-完善工程化体系，支持 Docker Compose 一键部署、自动化测试和接口文档生成。
+完成 Docker Compose 一键部署、后端测试体系、统一异常/请求日志、Redis 缓存与聊天限流；后续补 CI、OpenAPI 与 traceId。
 ```
 
 ## 推荐推进顺序
